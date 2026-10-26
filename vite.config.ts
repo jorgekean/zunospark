@@ -3,6 +3,7 @@ import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 
 export default defineConfig({
+  base: '/zunospark/',
   plugins: [
     react(),
     VitePWA({
@@ -10,7 +11,7 @@ export default defineConfig({
       injectRegister: 'auto',
       includeAssets: ['zuno-icon.svg', 'zuno-maskable.svg'],
       manifest: {
-        id: '/',
+        id: '/zunospark/',
         name: 'ZunoSpark: Wait-Power & Focus Trainer',
         short_name: 'ZunoSpark',
         description:
@@ -20,8 +21,8 @@ export default defineConfig({
         display: 'fullscreen',
         display_override: ['fullscreen', 'standalone'],
         orientation: 'any',
-        start_url: '/',
-        scope: '/',
+        start_url: '/zunospark/',
+        scope: '/zunospark/',
         categories: ['education', 'kids', 'games'],
         icons: [
           { src: 'zuno-icon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any' },
