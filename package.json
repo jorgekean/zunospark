@@ -1,0 +1,35 @@
+{
+  "name": "zunospark-pwa",
+  "private": true,
+  "version": "1.0.0",
+  "description": "ZunoSpark: Wait-Power & Focus Trainer — an offline-first executive function PWA for ages 3-6.",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host",
+    "build": "tsc && vite build",
+    "preview": "vite preview --host",
+    "typecheck": "tsc"
+  },
+  "dependencies": {
+    "@fontsource/fredoka": "^5.3.0",
+    "clsx": "^2.1.1",
+    "dexie": "^4.4.7",
+    "dexie-react-hooks": "^1.1.7",
+    "lucide-react": "^1.61.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "zustand": "^5.0.16"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.31",
+    "@types/react-dom": "^18.3.7",
+    "@vitejs/plugin-react": "^4.7.0",
+    "autoprefixer": "^10.6.1",
+    "postcss": "^8.5.31",
+    "tailwindcss": "^3.4.19",
+    "typescript": "5.6",
+    "vite": "^5.4.21",
+    "vite-plugin-pwa": "^0.21.2",
+    "workbox-window": "^7.4.1"
+  }
+}
