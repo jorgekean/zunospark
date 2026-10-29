@@ -35,7 +35,7 @@ function buildSequence(length: number): number[] {
   return seq;
 }
 
-export default function ThunderChimesZone({ level, onProgress, onFinish }: ZoneProps) {
+export default function ThunderChimesZone({ nodeConfig, onProgress, onFinish }: ZoneProps) {
   const progressRef = useRef(onProgress);
   const finishRef = useRef(onFinish);
   progressRef.current = onProgress;
@@ -44,12 +44,15 @@ export default function ThunderChimesZone({ level, onProgress, onFinish }: ZoneP
   const engineRef = useRef<Engine | null>(null);
   const guard = useRef(createPointerGuard(1)).current;
 
+  // Derive sequence note length from nodeIndex (Node 1: 2, Node 2: 3, Node 3: 3 with distractor, Node 4: 4, Node 5: 5)
+  const length = Math.min(5, Math.max(2, nodeConfig.nodeIndex >= 2 ? nodeConfig.nodeIndex + 1 : nodeConfig.nodeIndex + 2));
+
   const [phase, setPhase] = useState<ChimePhase>('listen');
   const [lit, setLit] = useState<number | null>(null);
   const [mood, setMood] = useState<ZunoMood>('AWAKE_POP');
   const [message, setMessage] = useState('Get ready to listen…');
   const [echoPos, setEchoPos] = useState(0);
-  const [seqLength, setSeqLength] = useState(level + 1);
+  const [seqLength, setSeqLength] = useState(length);
 
   useEffect(() => {
     const release = (event: PointerEvent): void => guard.up(event);
@@ -71,7 +74,6 @@ export default function ThunderChimesZone({ level, onProgress, onFinish }: ZoneP
       timers.push(id);
     };
 
-    const length = level + 1; // Level 1 = 2 notes, 2 = 3, 3 = 4.
     setSeqLength(length);
 
     const startTime = performance.now();
@@ -221,7 +223,7 @@ export default function ThunderChimesZone({ level, onProgress, onFinish }: ZoneP
       engineRef.current = null;
       timers.forEach((id) => window.clearTimeout(id));
     };
-  }, [level]);
+  }, [length, nodeConfig]);
 
   const onPadDown = (event: ReactPointerEvent<HTMLButtonElement>, index: number): void => {
     event.preventDefault();

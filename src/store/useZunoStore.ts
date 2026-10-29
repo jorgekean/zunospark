@@ -53,12 +53,17 @@ function loadMuted(): boolean {
 interface ZunoState {
   activeExplorer: ExplorerProfile | null;
   activeZone: ZoneId | null;
+  activeTrailZone: ZoneId | null;
+  activeNodeId: string | null;
   activeLevel: number;
   muted: boolean;
   cozyRoundCount: number;
   showParentDashboard: boolean;
 
   switchExplorer: (explorer: ExplorerProfile | null) => void;
+  openZoneTrail: (zone: ZoneId) => void;
+  closeZoneTrail: () => void;
+  startNode: (zone: ZoneId, nodeId: string) => void;
   startZone: (zone: ZoneId, level: number) => void;
   exitZone: () => void;
   completeRound: () => void;
@@ -73,19 +78,29 @@ zunoAudio.setMuted(initialMuted);
 export const useZunoStore = create<ZunoState>((set, get) => ({
   activeExplorer: null,
   activeZone: null,
+  activeTrailZone: null,
+  activeNodeId: null,
   activeLevel: 1,
   muted: initialMuted,
   cozyRoundCount: typeof window === 'undefined' ? 0 : loadCozyCount(),
   showParentDashboard: false,
 
-  switchExplorer: (explorer) => set({ activeExplorer: explorer, activeZone: null }),
+  switchExplorer: (explorer) => set({ activeExplorer: explorer, activeZone: null, activeTrailZone: null }),
+
+  openZoneTrail: (zone) => set({ activeTrailZone: zone }),
+  closeZoneTrail: () => set({ activeTrailZone: null }),
+
+  startNode: (zone, nodeId) => {
+    if (get().cozyRoundCount >= COZY_ROUND_LIMIT) return;
+    set({ activeZone: zone, activeNodeId: nodeId });
+  },
 
   startZone: (zone, level) => {
     if (get().cozyRoundCount >= COZY_ROUND_LIMIT) return;
     set({ activeZone: zone, activeLevel: level });
   },
 
-  exitZone: () => set({ activeZone: null }),
+  exitZone: () => set({ activeZone: null, activeNodeId: null }),
 
   completeRound: () => {
     const next = get().cozyRoundCount + 1;
@@ -95,7 +110,7 @@ export const useZunoStore = create<ZunoState>((set, get) => ({
 
   resetCooldown: () => {
     persistCozyCount(0);
-    set({ cozyRoundCount: 0, activeZone: null });
+    set({ cozyRoundCount: 0, activeZone: null, activeTrailZone: null, activeNodeId: null });
   },
 
   toggleParentDashboard: (force) =>

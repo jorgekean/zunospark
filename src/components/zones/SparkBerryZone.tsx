@@ -25,6 +25,8 @@ import {
   type ZoneProps,
 } from './shared';
 
+import type { NodeConfig } from '../../data/zoneNodes';
+
 type Visual = 'awake' | 'asleep';
 type Phase = 'anticipate' | 'stimulus' | 'feedback' | 'premature' | 'done';
 type Outcome = 'pop_hit' | 'pop_miss' | 'pause_hold' | 'pause_poof';
@@ -37,18 +39,19 @@ interface Trial {
 }
 
 /**
- * Level 1: 6 Pop / 2 Pause (≈70/30). Level 2: 5 / 3 (≈60/40).
- * Level 3: 5 / 3, with 3 Full Moon trials where the rule flips.
+ * Builds trials configured directly from NodeConfig:
+ * - popCount derived from nodeConfig.goRatio
+ * - Full Moon rule shifts active when nodeConfig.isNightMode is true
  */
-function buildTrials(level: number): Trial[] {
-  const popCount = level === 1 ? 6 : 5;
+function buildTrials(nodeConfig: NodeConfig): Trial[] {
+  const popCount = Math.max(3, Math.min(TOTAL_TRIALS - 1, Math.round(TOTAL_TRIALS * nodeConfig.goRatio)));
   const actions = shuffle<boolean>([
     ...Array.from({ length: popCount }, () => true),
     ...Array.from({ length: TOTAL_TRIALS - popCount }, () => false),
   ]);
 
   let moons: boolean[] = Array.from({ length: TOTAL_TRIALS }, () => false);
-  if (level === 3) {
+  if (nodeConfig.isNightMode) {
     moons = shuffle<boolean>([true, true, true, false, false, false, false, false]);
     if (moons[0]) {
       const swapWith = moons.findIndex((m) => !m);
@@ -78,7 +81,7 @@ interface Ripple {
   color: string;
 }
 
-export default function SparkBerryZone({ level, onProgress, onFinish }: ZoneProps) {
+export default function SparkBerryZone({ nodeConfig, onProgress, onFinish }: ZoneProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const progressRef = useRef(onProgress);
@@ -94,8 +97,8 @@ export default function SparkBerryZone({ level, onProgress, onFinish }: ZoneProp
     const ctx = canvas.getContext('2d');
     if (!ctx) return undefined;
 
-    const trials = buildTrials(level);
-    const windowMs = level === 1 ? 1750 : 1450;
+    const trials = buildTrials(nodeConfig);
+    const windowMs = nodeConfig.windowMs;
     const stars = createStars(80);
     const popTrials = trials.filter((t) => t.needsTap).length;
     const pauseTrials = trials.length - popTrials;
@@ -170,7 +173,7 @@ export default function SparkBerryZone({ level, onProgress, onFinish }: ZoneProp
       phaseStart = now;
       phaseDur = randomBetween(900, 1550) + extra;
       const next = trials[idx];
-      setBannerText(level === 3 && next.moon ? '🌕 Full Moon night!' : 'Watch the bush…');
+      setBannerText(nodeConfig.isNightMode && next.moon ? '🌕 Full Moon night!' : 'Watch the bush…');
     };
 
     const startStimulus = (now: number): void => {
@@ -180,7 +183,7 @@ export default function SparkBerryZone({ level, onProgress, onFinish }: ZoneProp
       stimStart = now;
       if (trial.visual === 'awake') zunoAudio.playPopCue();
       else zunoAudio.playPauseCue();
-      if (level === 3 && trial.moon) setBannerText('🌕 Full Moon! The rules flip!');
+      if (nodeConfig.isNightMode && trial.moon) setBannerText('🌕 Full Moon! The rules flip!');
       else setBannerText(trial.needsTap ? 'Zuno is awake — tap him!' : 'Zuno is sleeping — hands off!');
     };
 
@@ -263,7 +266,7 @@ export default function SparkBerryZone({ level, onProgress, onFinish }: ZoneProp
     const handleTap = (x: number, y: number, now: number): void => {
       if (phase === 'feedback' || phase === 'premature' || phase === 'done') return;
       const L = layout();
-      const bugActive = level === 2 && now >= bugHiddenUntil;
+      const bugActive = nodeConfig.hasDistractor && now >= bugHiddenUntil;
       const bug = bugActive ? bugPosition(now) : null;
       const nearBug = bug ? Math.hypot(x - bug.x, y - bug.y) <= bug.size * 1.8 : false;
 
@@ -343,7 +346,7 @@ export default function SparkBerryZone({ level, onProgress, onFinish }: ZoneProp
       const L = layout();
       const trial = trials[Math.min(idx, trials.length - 1)];
 
-      const moonTarget = level === 3 && trial.moon && phase !== 'done' ? 1 : 0;
+      const moonTarget = nodeConfig.isNightMode && trial.moon && phase !== 'done' ? 1 : 0;
       moonBlend += (moonTarget - moonBlend) * 0.08;
 
       drawNightSky(ctx, w, h, moonBlend);
@@ -378,7 +381,7 @@ export default function SparkBerryZone({ level, onProgress, onFinish }: ZoneProp
       // Countdown ring: its colour and style shift on Full Moon trials.
       if (phase === 'stimulus') {
         const remaining = clamp(1 - elapsed / windowMs, 0, 1);
-        const moonRule = level === 3 && trial.moon;
+        const moonRule = nodeConfig.isNightMode && trial.moon;
         const ringColor = moonRule ? '#fef3c7' : trial.needsTap ? ZUNO_PALETTE.cyan : ZUNO_PALETTE.gold;
         ctx.save();
         ctx.lineCap = 'round';
@@ -412,7 +415,7 @@ export default function SparkBerryZone({ level, onProgress, onFinish }: ZoneProp
         drawText(feedbackText, w / 2, Math.max(52, L.zy - L.r * 2.05) - rise, clamp(Math.min(w, h) * 0.055, 20, 40), feedbackColor, alpha);
       }
 
-      if (level === 2 && now >= bugHiddenUntil && phase !== 'done') {
+      if (nodeConfig.hasDistractor && now >= bugHiddenUntil && phase !== 'done') {
         const bug = bugPosition(now);
         drawStaticBug(ctx, bug.x, bug.y, bug.size, now);
       }
@@ -454,7 +457,7 @@ export default function SparkBerryZone({ level, onProgress, onFinish }: ZoneProp
       canvas.removeEventListener('pointercancel', onRelease);
       canvas.removeEventListener('lostpointercapture', onRelease);
     };
-  }, [level]);
+  }, [nodeConfig]);
 
   return (
     <div ref={containerRef} className="relative h-full w-full overflow-hidden">

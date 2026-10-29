@@ -25,7 +25,7 @@ interface Controls {
   setProgress: (side: Side, value: number) => void;
 }
 
-export default function TwinCurrentsZone({ level, onProgress, onFinish }: ZoneProps) {
+export default function TwinCurrentsZone({ nodeConfig, onProgress, onFinish }: ZoneProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const controlsRef = useRef<Controls | null>(null);
@@ -70,9 +70,12 @@ export default function TwinCurrentsZone({ level, onProgress, onFinish }: ZonePr
     const pathX = (side: Side, p: number): number => {
       const sign = side === 'left' ? -1 : 1;
       const mid = w / 2;
-      if (level === 1) return mid + sign * w * 0.22; // straight parallel streams
-      if (level === 2) return mid + sign * w * 0.22 + Math.sin(p * Math.PI * 2) * w * 0.07; // gentle S-curves
-      return mid + sign * w * (0.1 + 0.24 * p); // mirror diverging streams
+      const idx = nodeConfig.nodeIndex;
+      if (idx === 0) return mid + sign * w * 0.22; // straight parallel streams
+      if (idx === 1) return mid + sign * w * 0.22 + Math.sin(p * Math.PI * 2) * w * 0.07; // gentle S-curves
+      if (idx === 2) return mid + sign * w * 0.22 + Math.sin(p * Math.PI * 3) * w * 0.09; // rapids tighter S-curves
+      if (idx === 3) return mid + sign * w * (0.1 + 0.24 * p); // mirror diverging streams
+      return mid + sign * w * (0.2 + Math.sin(p * Math.PI * 2) * 0.08); // lotus sanctuary
     };
 
     /* -------------------------------- state ------------------------------ */
@@ -351,7 +354,7 @@ export default function TwinCurrentsZone({ level, onProgress, onFinish }: ZonePr
       canvas.removeEventListener('pointercancel', onRelease);
       canvas.removeEventListener('lostpointercapture', onRelease);
     };
-  }, [level]);
+  }, [nodeConfig]);
 
   const onSlider = (side: Side, raw: string): void => {
     const value = clamp(parseFloat(raw) / 100, 0, 1);

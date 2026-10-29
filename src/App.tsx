@@ -1,14 +1,16 @@
 import { useEffect, useState } from 'react';
 import clsx from 'clsx';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { Lock, Moon, Star, Volume2, VolumeX, Zap } from 'lucide-react';
-import { db, ensureSeedData, MAX_LEVEL, type ExplorerProfile, type ZoneId } from './db/zunoDb';
+import { Footprints, Lock, Moon, Sparkles, Star, Volume2, VolumeX, Zap } from 'lucide-react';
+import { db, ensureSeedData, type ExplorerProfile, type ZoneId } from './db/zunoDb';
+import { ZONE_TRAILS, getDefaultNodeId, getNodeConfig } from './data/zoneNodes';
 import { zunoAudio } from './audio/ZunoSynth';
 import { COZY_ROUND_LIMIT, useZunoStore } from './store/useZunoStore';
 import GameStage, { ZONE_INFO } from './components/GameStage';
 import HoldButton from './components/HoldButton';
 import ParentSparkDashboard, { ParentGateButton } from './components/ParentSparkDashboard';
 import ZunoMascot from './components/ZunoMascot';
+import ZoneTrailMap from './components/ZoneTrailMap';
 
 const ZONE_ORDER: ZoneId[] = ['spark_berry', 'thunder_chimes', 'twin_currents'];
 
@@ -79,7 +81,7 @@ function Hub({ explorers, activeExplorer }: HubProps) {
   const muted = useZunoStore((s) => s.muted);
   const toggleMuted = useZunoStore((s) => s.toggleMuted);
   const switchExplorer = useZunoStore((s) => s.switchExplorer);
-  const startZone = useZunoStore((s) => s.startZone);
+  const openZoneTrail = useZunoStore((s) => s.openZoneTrail);
   const cozyRoundCount = useZunoStore((s) => s.cozyRoundCount);
   const toggleParentDashboard = useZunoStore((s) => s.toggleParentDashboard);
 
@@ -149,12 +151,15 @@ function Hub({ explorers, activeExplorer }: HubProps) {
           {ZONE_ORDER.map((zoneId, cardIndex) => {
             const info = ZONE_INFO[zoneId];
             const Icon = info.Icon;
-            const unlocked = activeExplorer.unlockedLevel[zoneId] ?? 1;
+            const trail = ZONE_TRAILS[zoneId];
+            const unlockedNodeIds = activeExplorer.unlockedNodes?.[zoneId] ?? [trail[0].nodeId];
+            const unlockedCount = unlockedNodeIds.length;
+
             return (
               <article
                 key={zoneId}
                 id={`zone-card-${zoneId}`}
-                className="glass-card animate-slide-up flex flex-col gap-3 p-5"
+                className="glass-card animate-slide-up flex flex-col gap-4 p-5 md:p-6"
                 style={{ animationDelay: `${cardIndex * 120}ms` }}
               >
                 <div className="flex items-center gap-4">
@@ -166,37 +171,64 @@ function Hub({ explorers, activeExplorer }: HubProps) {
                     <p className="text-sm font-semibold text-zuno-gold">{info.skill}</p>
                   </div>
                 </div>
+
                 <p className="text-base text-zuno-lavender/75">{info.tagline}</p>
-                <div className="mt-auto grid grid-cols-3 gap-2">
-                  {Array.from({ length: MAX_LEVEL }, (_, i) => i + 1).map((level) => {
-                    const locked = level > unlocked;
-                    return (
-                      <button
-                        key={level}
-                        type="button"
-                        id={`btn-${zoneId}-level-${level}`}
-                        disabled={locked}
-                        onClick={() => {
-                          zunoAudio.unlock();
-                          zunoAudio.playTap();
-                          startZone(zoneId, level);
-                        }}
-                        aria-label={locked ? `Level ${level} locked` : `Play ${info.title} level ${level}`}
-                        className={clsx(
-                          'flex min-h-[84px] flex-col items-center justify-center gap-1 rounded-3xl border-2 text-lg font-bold transition-all duration-150 active:scale-95',
-                          locked
-                            ? 'cursor-not-allowed border-white/10 bg-white/5 text-zuno-lavender/35'
-                            : level === unlocked
-                              ? 'animate-glow-pulse border-zuno-cyan bg-zuno-cyan/15 text-zuno-cyan'
-                              : 'border-zuno-gold/60 bg-zuno-gold/10 text-zuno-gold hover:bg-zuno-gold/20',
-                        )}
-                      >
-                        {locked ? <Lock className="h-6 w-6" /> : <Star className={clsx('h-6 w-6', level < unlocked && 'fill-zuno-gold')} />}
-                        <span>Level {level}</span>
-                      </button>
-                    );
-                  })}
+
+                {/* Trail Progression Preview */}
+                <div className="rounded-2xl border border-white/10 bg-white/5 p-3">
+                  <div className="mb-2 flex items-center justify-between text-xs font-semibold text-zuno-lavender/70">
+                    <span className="flex items-center gap-1">
+                      <Footprints className="h-3.5 w-3.5 text-zuno-cyan" /> Winding Trail
+                    </span>
+                    <span className="text-zuno-gold font-bold">{unlockedCount} of 5 Spots Unlocked</span>
+                  </div>
+
+                  {/* 5 Node indicators along trail */}
+                  <div className="flex items-center justify-between gap-1.5 px-1 py-1">
+                    {trail.map((node, i) => {
+                      const isUnlocked = unlockedNodeIds.includes(node.nodeId);
+                      const hasEnoughSparks = (activeExplorer.sparksCollected ?? 0) >= node.requiredSparks;
+                      const isPlayable = isUnlocked && hasEnoughSparks;
+                      const isNext = i === unlockedCount - 1;
+
+                      return (
+                        <div key={node.nodeId} className="flex flex-1 flex-col items-center gap-1">
+                          <div
+                            className={clsx(
+                              'flex h-9 w-9 items-center justify-center rounded-full border-2 text-xs font-bold transition-all',
+                              isPlayable
+                                ? isNext
+                                  ? 'border-zuno-cyan bg-zuno-cyan/20 text-zuno-cyan shadow-glow-cyan animate-pulse'
+                                  : 'border-zuno-gold bg-zuno-gold/20 text-zuno-gold'
+                                : 'border-white/10 bg-white/5 text-zuno-lavender/30',
+                            )}
+                          >
+                            {isPlayable ? (
+                              <Star className={clsx('h-4 w-4', i < unlockedCount - 1 && 'fill-zuno-gold text-zuno-gold')} />
+                            ) : (
+                              <Lock className="h-3.5 w-3.5 text-zuno-lavender/30" />
+                            )}
+                          </div>
+                          <span className="text-[10px] text-zuno-lavender/60">Spot {i + 1}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
+
+                {/* Open Zone Trail Button */}
+                <button
+                  type="button"
+                  id={`btn-open-trail-${zoneId}`}
+                  onClick={() => {
+                    zunoAudio.unlock();
+                    zunoAudio.playTap();
+                    openZoneTrail(zoneId);
+                  }}
+                  className="zuno-btn-primary mt-auto min-h-[68px] w-full text-xl"
+                >
+                  <Sparkles className="h-6 w-6" /> Explore Trail Map
+                </button>
               </article>
             );
           })}
@@ -213,11 +245,14 @@ function Hub({ explorers, activeExplorer }: HubProps) {
 export default function App() {
   const activeExplorer = useZunoStore((s) => s.activeExplorer);
   const activeZone = useZunoStore((s) => s.activeZone);
-  const activeLevel = useZunoStore((s) => s.activeLevel);
+  const activeTrailZone = useZunoStore((s) => s.activeTrailZone);
+  const activeNodeId = useZunoStore((s) => s.activeNodeId);
   const cozyRoundCount = useZunoStore((s) => s.cozyRoundCount);
   const showParentDashboard = useZunoStore((s) => s.showParentDashboard);
   const switchExplorer = useZunoStore((s) => s.switchExplorer);
   const exitZone = useZunoStore((s) => s.exitZone);
+  const closeZoneTrail = useZunoStore((s) => s.closeZoneTrail);
+  const startNode = useZunoStore((s) => s.startNode);
   const toggleParentDashboard = useZunoStore((s) => s.toggleParentDashboard);
 
   const [seeded, setSeeded] = useState(false);
@@ -263,12 +298,21 @@ export default function App() {
     <>
       <Hub explorers={explorers} activeExplorer={activeExplorer} />
 
+      {activeTrailZone && !activeZone && (
+        <ZoneTrailMap
+          zoneId={activeTrailZone}
+          explorer={activeExplorer}
+          onSelectNode={(node) => startNode(activeTrailZone, node.nodeId)}
+          onBack={closeZoneTrail}
+        />
+      )}
+
       {activeZone && (
         <GameStage
-          key={`${activeExplorer.id}-${activeZone}-${activeLevel}`}
+          key={`${activeExplorer.id}-${activeZone}-${activeNodeId}`}
           explorerId={activeExplorer.id}
           zoneId={activeZone}
-          level={activeLevel}
+          nodeConfig={getNodeConfig(activeZone, activeNodeId ?? getDefaultNodeId(activeZone))}
           onExit={exitZone}
         />
       )}
@@ -279,3 +323,4 @@ export default function App() {
     </>
   );
 }
+

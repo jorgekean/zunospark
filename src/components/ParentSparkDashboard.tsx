@@ -3,10 +3,11 @@ import clsx from 'clsx';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { Brain, CloudOff, Gauge, LockKeyhole, ShieldCheck, Timer, Unlock, UserPlus, X, Zap, ChartColumn, Delete } from 'lucide-react';
 import { createExplorer, db, unlockAllLevels, type SparkSession, type ZoneId } from '../db/zunoDb';
+import { getNodeConfig } from '../data/zoneNodes';
 import { useZunoStore } from '../store/useZunoStore';
-import HoldButton from './HoldButton';
 import { ZONE_INFO } from './GameStage';
 import { median } from './zones/shared';
+import HoldButton from './HoldButton';
 
 /* ------------------------------------------------------------------ */
 /*  Parent Gate                                                        */
@@ -341,7 +342,7 @@ export default function ParentSparkDashboard({ onClose }: ParentSparkDashboardPr
                 <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
                   <h2 className="font-semibold text-zuno-lavender">Session history</h2>
                   <button type="button" id="btn-unlock-all" onClick={() => void unlockAllLevels(activeExplorer.id)} className="zuno-btn-ghost h-10 px-4 text-sm">
-                    <Unlock className="h-4 w-4" /> Unlock all levels
+                    <Unlock className="h-4 w-4" /> Unlock all trail spots
                   </button>
                 </div>
                 <div className="overflow-x-auto" style={{ touchAction: 'pan-x pan-y' }}>
@@ -350,7 +351,7 @@ export default function ParentSparkDashboard({ onClose }: ParentSparkDashboardPr
                       <tr>
                         <th className="py-2 pr-3">When</th>
                         <th className="pr-3">Clearing</th>
-                        <th className="pr-3">Lvl</th>
+                        <th className="pr-3">Trail Spot</th>
                         <th className="pr-3">Wait-Power</th>
                         <th className="pr-3">Reaction</th>
                         <th className="pr-3">Poofs</th>
@@ -369,7 +370,7 @@ export default function ParentSparkDashboard({ onClose }: ParentSparkDashboardPr
                         <tr key={s.id} className="border-t border-white/10">
                           <td className="py-2 pr-3 text-zuno-lavender/80">{formatDate(s.timestamp)}</td>
                           <td className="pr-3">{ZONE_INFO[s.zoneId].title}</td>
-                          <td className="pr-3">{s.level}</td>
+                          <td className="pr-3">{s.nodeId ? getNodeConfig(s.zoneId, s.nodeId).title : `Spot ${s.level}`}</td>
                           <td className="pr-3 font-semibold text-zuno-gold">{s.waitPowerScore}%</td>
                           <td className="pr-3">{s.medianReactionMs} ms</td>
                           <td className="pr-3 text-zuno-coral">{s.staticPoofCount}</td>

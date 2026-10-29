@@ -87,6 +87,9 @@ export const ZONE_INFO: Record<ZoneId, ZoneInfo> = {
 };
 
 /* ------------------------------------------------------------------ */
+import { ZONE_TRAILS, type NodeConfig } from '../data/zoneNodes';
+
+/* ------------------------------------------------------------------ */
 /*  Stage                                                              */
 /* ------------------------------------------------------------------ */
 
@@ -94,12 +97,14 @@ type StagePhase = 'intro' | 'playing' | 'result';
 
 interface SavedSummary {
   unlockedNext: number | null;
+  unlockedNextNode: string | null;
 }
 
 interface GameStageProps {
   explorerId: string;
   zoneId: ZoneId;
-  level: number;
+  level?: number;
+  nodeConfig?: NodeConfig;
   onExit: () => void;
 }
 
@@ -110,8 +115,11 @@ function starsFor(result: RoundResult): number {
   return 1;
 }
 
-export default function GameStage({ explorerId, zoneId, level, onExit }: GameStageProps) {
+export default function GameStage({ explorerId, zoneId, level, nodeConfig, onExit }: GameStageProps) {
   const info = ZONE_INFO[zoneId];
+  const activeNodeConfig = nodeConfig ?? (level ? ZONE_TRAILS[zoneId][Math.min(4, Math.max(0, level - 1))] : ZONE_TRAILS[zoneId][0]);
+  const activeLevel = activeNodeConfig.nodeIndex + 1;
+
   const muted = useZunoStore((s) => s.muted);
   const toggleMuted = useZunoStore((s) => s.toggleMuted);
   const completeRound = useZunoStore((s) => s.completeRound);
@@ -147,7 +155,8 @@ export default function GameStage({ explorerId, zoneId, level, onExit }: GameSta
         {
           explorerId,
           zoneId,
-          level,
+          level: activeLevel,
+          nodeId: activeNodeConfig.nodeId,
           durationMs: round.durationMs,
           waitPowerScore: round.waitPowerScore,
           popAccuracyScore: round.popAccuracyScore,
@@ -156,11 +165,16 @@ export default function GameStage({ explorerId, zoneId, level, onExit }: GameSta
         },
         round.sparksEarned,
       )
-        .then(({ unlockedNext }) => setSaved({ unlockedNext }))
-        .catch(() => setSaved({ unlockedNext: null }));
+        .then(({ unlockedNext, unlockedNextNode }) => {
+          setSaved({ unlockedNext, unlockedNextNode });
+          if (unlockedNextNode) {
+            zunoAudio.playWaitPowerWin();
+          }
+        })
+        .catch(() => setSaved({ unlockedNext: null, unlockedNextNode: null }));
       completeRound();
     },
-    [completeRound, explorerId, level, zoneId],
+    [activeLevel, activeNodeConfig.nodeId, completeRound, explorerId, zoneId],
   );
 
   // After the third round Zuno gets sleepy: leave automatically so the Cozy Cool-Down can take over.
@@ -191,7 +205,7 @@ export default function GameStage({ explorerId, zoneId, level, onExit }: GameSta
           </span>
           <div className="min-w-0">
             <h1 className="truncate text-lg font-bold leading-tight text-zuno-lavender md:text-2xl">{info.title}</h1>
-            <p className="truncate text-xs text-zuno-lavender/70 md:text-sm">Level {level} · {info.levelTitles[level - 1]}</p>
+            <p className="truncate text-xs text-zuno-lavender/70 md:text-sm">Spot {activeLevel} of 5 · {activeNodeConfig.title}</p>
           </div>
         </div>
         <div className="flex-1" />
@@ -209,9 +223,9 @@ export default function GameStage({ explorerId, zoneId, level, onExit }: GameSta
       <main className="relative min-h-0 flex-1">
         {phase === 'playing' && (
           <div className="absolute inset-0" key={attempt}>
-            {zoneId === 'spark_berry' && <SparkBerryZone level={level} onProgress={setCompleted} onFinish={handleFinish} />}
-            {zoneId === 'thunder_chimes' && <ThunderChimesZone level={level} onProgress={setCompleted} onFinish={handleFinish} />}
-            {zoneId === 'twin_currents' && <TwinCurrentsZone level={level} onProgress={setCompleted} onFinish={handleFinish} />}
+            {zoneId === 'spark_berry' && <SparkBerryZone nodeConfig={activeNodeConfig} onProgress={setCompleted} onFinish={handleFinish} />}
+            {zoneId === 'thunder_chimes' && <ThunderChimesZone nodeConfig={activeNodeConfig} onProgress={setCompleted} onFinish={handleFinish} />}
+            {zoneId === 'twin_currents' && <TwinCurrentsZone nodeConfig={activeNodeConfig} onProgress={setCompleted} onFinish={handleFinish} />}
           </div>
         )}
 
@@ -219,14 +233,24 @@ export default function GameStage({ explorerId, zoneId, level, onExit }: GameSta
           <div className="scroll-zone absolute inset-0 flex items-center justify-center p-4">
             <section className="glass-card animate-pop-in flex max-h-full w-full max-w-2xl flex-col items-center gap-3 p-5 text-center md:gap-4 md:p-8">
               <ZunoMascot mood="AWAKE_POP" size={170} />
-              <h2 className="text-gradient text-3xl font-bold md:text-4xl">{info.title}</h2>
+              <h2 className="text-gradient text-3xl font-bold md:text-4xl">{activeNodeConfig.title}</h2>
               <p className="text-base text-zuno-lavender/80 md:text-lg">{info.tagline}</p>
               <ul className="w-full space-y-2 text-left text-lg font-medium text-zuno-lavender md:text-xl">
-                {info.levelRules[level - 1].map((rule) => (
+                {info.levelRules[Math.min(2, activeLevel - 1)].map((rule) => (
                   <li key={rule} className="rounded-2xl bg-white/5 px-4 py-2">
                     {rule}
                   </li>
                 ))}
+                {activeNodeConfig.hasDistractor && (
+                  <li className="rounded-2xl bg-zuno-gold/15 px-4 py-2 text-zuno-gold">
+                    ⚡ Watch out for sparkling distractors!
+                  </li>
+                )}
+                {activeNodeConfig.isNightMode && (
+                  <li className="rounded-2xl bg-indigo-500/15 px-4 py-2 text-indigo-200">
+                    🌙 Twilight night mode: focus calmly under the stars!
+                  </li>
+                )}
               </ul>
               <button
                 type="button"
@@ -272,7 +296,12 @@ export default function GameStage({ explorerId, zoneId, level, onExit }: GameSta
                   <p className="text-xs text-zuno-lavender/70 md:text-sm">Sparks</p>
                 </div>
               </div>
-              {saved?.unlockedNext && (
+              {saved?.unlockedNextNode && (
+                <p className="animate-pop-in rounded-full border border-zuno-cyan bg-zuno-cyan/20 px-5 py-2 text-lg font-bold text-zuno-cyan shadow-glow-cyan">
+                  🌟 Next Trail Spot Unlocked! Zuno is walking ahead!
+                </p>
+              )}
+              {saved?.unlockedNext && !saved?.unlockedNextNode && (
                 <p className="animate-pop-in rounded-full bg-zuno-gold/20 px-5 py-2 text-lg font-bold text-zuno-gold">
                   🔓 Level {saved.unlockedNext} unlocked!
                 </p>
@@ -287,7 +316,7 @@ export default function GameStage({ explorerId, zoneId, level, onExit }: GameSta
                   </button>
                 )}
                 <button type="button" id="btn-back-to-forest" onClick={onExit} className="zuno-btn-gold min-h-[68px] flex-1 text-xl">
-                  Back to the forest
+                  Back to the Trail
                 </button>
               </div>
             </section>

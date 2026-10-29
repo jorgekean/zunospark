@@ -1,3 +1,5 @@
+import type { NodeConfig } from '../../data/zoneNodes';
+
 /* Shared types and helpers for the three ZunoSpark training zones. */
 
 export const TOTAL_TRIALS = 8;
@@ -17,7 +19,8 @@ export interface RoundResult {
 }
 
 export interface ZoneProps {
-  level: number;
+  level?: number;
+  nodeConfig: NodeConfig;
   onProgress: (completedTrials: number) => void;
   onFinish: (result: RoundResult) => void;
 }
