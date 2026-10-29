@@ -223,6 +223,20 @@ class ZunoAudioEngine {
     });
   }
 
+  /** Trail step — playful pentatonic marimba tap as Zuno hops along the trail. */
+  playTrailStep(stepIndex: number): void {
+    const target = this.target();
+    if (!target) return;
+    const scale = [NOTE.C5, NOTE.D5, NOTE.E5, NOTE.G5, NOTE.A5, NOTE.C6];
+    const freq = scale[Math.abs(stepIndex) % scale.length];
+    this.marimba(target, freq, 0, 0.22);
+  }
+
+  /** Triumphant unlock cheer when Zuno reaches a new trail spot! */
+  playTrailCheer(): void {
+    this.playWaitPowerWin();
+  }
+
   /** Static Poof — silly cartoon slide 320Hz → 140Hz → 260Hz. Never a buzzer. */
   playStaticPoof(): void {
     const target = this.target();

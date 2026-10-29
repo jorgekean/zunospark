@@ -145,6 +145,8 @@ export default function GameStage({ explorerId, zoneId, level, nodeConfig, onExi
     setPhase('playing');
   };
 
+  const triggerTrailCelebration = useZunoStore((s) => s.triggerTrailCelebration);
+
   const handleFinish = useCallback(
     (round: RoundResult) => {
       if (finishedRef.current) return;
@@ -169,12 +171,25 @@ export default function GameStage({ explorerId, zoneId, level, nodeConfig, onExi
           setSaved({ unlockedNext, unlockedNextNode });
           if (unlockedNextNode) {
             zunoAudio.playWaitPowerWin();
+            triggerTrailCelebration({
+              zoneId,
+              fromIndex: activeNodeConfig.nodeIndex,
+              toIndex: Math.min(4, activeNodeConfig.nodeIndex + 1),
+              unlockedNodeId: unlockedNextNode,
+            });
+          } else if ((round.waitPowerScore + round.popAccuracyScore) / 2 >= 60) {
+            triggerTrailCelebration({
+              zoneId,
+              fromIndex: activeNodeConfig.nodeIndex,
+              toIndex: Math.min(4, activeNodeConfig.nodeIndex + 1),
+              unlockedNodeId: activeNodeConfig.nodeId,
+            });
           }
         })
         .catch(() => setSaved({ unlockedNext: null, unlockedNextNode: null }));
       completeRound();
     },
-    [activeLevel, activeNodeConfig.nodeId, completeRound, explorerId, zoneId],
+    [activeLevel, activeNodeConfig.nodeId, activeNodeConfig.nodeIndex, completeRound, explorerId, triggerTrailCelebration, zoneId],
   );
 
   // After the third round Zuno gets sleepy: leave automatically so the Cozy Cool-Down can take over.

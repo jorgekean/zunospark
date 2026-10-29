@@ -50,6 +50,13 @@ function loadMuted(): boolean {
   return readStorage(MUTE_STORAGE_KEY) === '1';
 }
 
+export interface TrailCelebration {
+  zoneId: ZoneId;
+  fromIndex: number;
+  toIndex: number;
+  unlockedNodeId: string;
+}
+
 interface ZunoState {
   activeExplorer: ExplorerProfile | null;
   activeZone: ZoneId | null;
@@ -59,6 +66,7 @@ interface ZunoState {
   muted: boolean;
   cozyRoundCount: number;
   showParentDashboard: boolean;
+  trailCelebration: TrailCelebration | null;
 
   switchExplorer: (explorer: ExplorerProfile | null) => void;
   openZoneTrail: (zone: ZoneId) => void;
@@ -66,6 +74,8 @@ interface ZunoState {
   startNode: (zone: ZoneId, nodeId: string) => void;
   startZone: (zone: ZoneId, level: number) => void;
   exitZone: () => void;
+  triggerTrailCelebration: (celebration: TrailCelebration) => void;
+  clearTrailCelebration: () => void;
   completeRound: () => void;
   resetCooldown: () => void;
   toggleParentDashboard: (force?: boolean) => void;
@@ -84,23 +94,27 @@ export const useZunoStore = create<ZunoState>((set, get) => ({
   muted: initialMuted,
   cozyRoundCount: typeof window === 'undefined' ? 0 : loadCozyCount(),
   showParentDashboard: false,
+  trailCelebration: null,
 
-  switchExplorer: (explorer) => set({ activeExplorer: explorer, activeZone: null, activeTrailZone: null }),
+  switchExplorer: (explorer) => set({ activeExplorer: explorer, activeZone: null, activeTrailZone: null, trailCelebration: null }),
 
   openZoneTrail: (zone) => set({ activeTrailZone: zone }),
-  closeZoneTrail: () => set({ activeTrailZone: null }),
+  closeZoneTrail: () => set({ activeTrailZone: null, trailCelebration: null }),
 
   startNode: (zone, nodeId) => {
     if (get().cozyRoundCount >= COZY_ROUND_LIMIT) return;
-    set({ activeZone: zone, activeNodeId: nodeId });
+    set({ activeZone: zone, activeNodeId: nodeId, trailCelebration: null });
   },
 
   startZone: (zone, level) => {
     if (get().cozyRoundCount >= COZY_ROUND_LIMIT) return;
-    set({ activeZone: zone, activeLevel: level });
+    set({ activeZone: zone, activeLevel: level, trailCelebration: null });
   },
 
   exitZone: () => set({ activeZone: null, activeNodeId: null }),
+
+  triggerTrailCelebration: (celebration) => set({ trailCelebration: celebration }),
+  clearTrailCelebration: () => set({ trailCelebration: null }),
 
   completeRound: () => {
     const next = get().cozyRoundCount + 1;

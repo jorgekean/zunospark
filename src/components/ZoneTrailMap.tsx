@@ -1,10 +1,12 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import clsx from 'clsx';
 import {
   ArrowLeft,
   Crown,
   Lock,
   Moon,
+  Play,
+  RotateCcw,
   Sparkles,
   Sprout,
   Star,
@@ -44,6 +46,44 @@ function getNodeIcon(iconType: NodeIconType) {
   }
 }
 
+interface Point {
+  x: number;
+  y: number;
+}
+
+interface TrailSparkle {
+  id: number;
+  x: number;
+  y: number;
+  symbol: string;
+  color: string;
+}
+
+interface ConfettiPiece {
+  id: number;
+  x: number;
+  y: number;
+  color: string;
+  size: number;
+  vx: number;
+  vy: number;
+  rot: number;
+}
+
+/** Cubic Bezier point evaluator */
+function cubicBezierPoint(p0: Point, p1: Point, p2: Point, p3: Point, t: number): Point {
+  const u = 1 - t;
+  const tt = t * t;
+  const uu = u * u;
+  const uuu = uu * u;
+  const ttt = tt * t;
+
+  return {
+    x: uuu * p0.x + 3 * uu * t * p1.x + 3 * u * tt * p2.x + ttt * p3.x,
+    y: uuu * p0.y + 3 * uu * t * p1.y + 3 * u * tt * p2.y + ttt * p3.y,
+  };
+}
+
 export default function ZoneTrailMap({
   zoneId,
   explorer,
@@ -54,6 +94,8 @@ export default function ZoneTrailMap({
   const info = ZONE_INFO[zoneId];
   const muted = useZunoStore((s) => s.muted);
   const toggleMuted = useZunoStore((s) => s.toggleMuted);
+  const trailCelebration = useZunoStore((s) => s.trailCelebration);
+  const clearTrailCelebration = useZunoStore((s) => s.clearTrailCelebration);
 
   const unlockedNodeIds = explorer.unlockedNodes?.[zoneId] ?? [trail[0].nodeId];
   const sparks = explorer.sparksCollected ?? 0;
@@ -65,12 +107,153 @@ export default function ZoneTrailMap({
 
   const [toast, setToast] = useState<string | null>(null);
 
+  // Trail Coordinates along the winding S-curve (in percentages)
+  const nodePositions: Point[] = [
+    { x: 30, y: 84 },
+    { x: 70, y: 67 },
+    { x: 28, y: 50 },
+    { x: 72, y: 33 },
+    { x: 50, y: 15 },
+  ];
+
+  // Bezier control points matching the SVG path
+  const segmentControls = [
+    { cp1: { x: 60, y: 78 }, cp2: { x: 65, y: 72 } },
+    { cp1: { x: 75, y: 58 }, cp2: { x: 30, y: 60 } },
+    { cp1: { x: 25, y: 40 }, cp2: { x: 75, y: 42 } },
+    { cp1: { x: 70, y: 22 }, cp2: { x: 50, y: 25 } },
+  ];
+
+  /* ------------------------------------------------------------------ */
+  /*  Trail Walk Animation State                                         */
+  /* ------------------------------------------------------------------ */
+
+  const [animating, setAnimating] = useState(false);
+  const [animPos, setAnimPos] = useState<Point>(nodePositions[latestUnlockedIndex]);
+  const [activeSegmentIndex, setActiveSegmentIndex] = useState<number | null>(null);
+  const [trailSparkles, setTrailSparkles] = useState<TrailSparkle[]>([]);
+  const [confetti, setConfetti] = useState<ConfettiPiece[]>([]);
+  const [unlockedModalNode, setUnlockedModalNode] = useState<NodeConfig | null>(null);
+
+  const animRef = useRef<number | null>(null);
+  const lastStepSoundRef = useRef<number>(-1);
+
+  // Trigger trail pass celebration when returning from a successful game stage
+  useEffect(() => {
+    if (!trailCelebration || trailCelebration.zoneId !== zoneId) return;
+
+    const fromIdx = Math.min(4, Math.max(0, trailCelebration.fromIndex));
+    const toIdx = Math.min(4, Math.max(0, trailCelebration.toIndex));
+
+    if (fromIdx === toIdx) {
+      // Replayed last spot: celebrate right on node!
+      zunoAudio.playTrailCheer();
+      createConfettiAt(nodePositions[toIdx]);
+      clearTrailCelebration();
+      return;
+    }
+
+    // Begin the animated journey along the trail
+    startTrailWalk(fromIdx, toIdx);
+    clearTrailCelebration();
+  }, [trailCelebration, zoneId]);
+
+  const startTrailWalk = (fromIdx: number, toIdx: number) => {
+    if (animRef.current) cancelAnimationFrame(animRef.current);
+
+    setAnimating(true);
+    setActiveSegmentIndex(fromIdx);
+    setTrailSparkles([]);
+    setUnlockedModalNode(null);
+
+    const p0 = nodePositions[fromIdx];
+    const p3 = nodePositions[toIdx];
+    const { cp1, cp2 } = segmentControls[fromIdx] ?? { cp1: p0, cp2: p3 };
+
+    const duration = 2400; // 2.4s playful trot
+    const startTime = performance.now();
+    lastStepSoundRef.current = -1;
+
+    const symbols = ['✦', '⚡', '★', '🐾', '✨'];
+    const colors = ['#00f2fe', '#fbbf24', '#a855f7', '#67e8f9'];
+
+    const animate = (now: number) => {
+      const elapsed = now - startTime;
+      const progress = Math.min(1, elapsed / duration);
+
+      // Smooth cubic ease-in-out
+      const eased =
+        progress < 0.5
+          ? 2 * progress * progress
+          : -1 + (4 - 2 * progress) * progress;
+
+      // Sample path position
+      const pt = cubicBezierPoint(p0, cp1, cp2, p3, eased);
+
+      // Add joyful hopping bounce (4 hops along the path)
+      const hopCycle = Math.sin(progress * Math.PI * 4);
+      const hopBounce = -Math.abs(hopCycle) * 3.8; // Vertical bounce in %
+
+      setAnimPos({ x: pt.x, y: pt.y + hopBounce });
+
+      // Footstep sound when Zuno crests each hop
+      const stepIndex = Math.floor(progress * 4);
+      if (stepIndex > lastStepSoundRef.current && hopCycle > 0.8) {
+        lastStepSoundRef.current = stepIndex;
+        zunoAudio.playTrailStep(stepIndex);
+
+        // Spawn a trailing paw/sparkle
+        setTrailSparkles((prev) => [
+          ...prev.slice(-14),
+          {
+            id: Date.now() + Math.random(),
+            x: pt.x + (Math.random() * 4 - 2),
+            y: pt.y + (Math.random() * 3 - 1.5),
+            symbol: symbols[Math.floor(Math.random() * symbols.length)],
+            color: colors[Math.floor(Math.random() * colors.length)],
+          },
+        ]);
+      }
+
+      if (progress < 1) {
+        animRef.current = requestAnimationFrame(animate);
+      } else {
+        // Triumphant Arrival!
+        setAnimating(false);
+        setActiveSegmentIndex(null);
+        setAnimPos(p3);
+        zunoAudio.playTrailCheer();
+        createConfettiAt(p3);
+        setUnlockedModalNode(trail[toIdx]);
+      }
+    };
+
+    animRef.current = requestAnimationFrame(animate);
+  };
+
+  const createConfettiAt = (origin: Point) => {
+    const pieces: ConfettiPiece[] = Array.from({ length: 28 }, (_, i) => ({
+      id: i,
+      x: origin.x + (Math.random() * 10 - 5),
+      y: origin.y - 4 + (Math.random() * 8 - 4),
+      color: ['#00f2fe', '#fbbf24', '#a855f7', '#f43f5e', '#34d399'][i % 5],
+      size: Math.random() * 8 + 6,
+      vx: (Math.random() - 0.5) * 12,
+      vy: -(Math.random() * 12 + 6),
+      rot: Math.random() * 360,
+    }));
+    setConfetti(pieces);
+    window.setTimeout(() => setConfetti([]), 3500);
+  };
+
   const showToast = (message: string) => {
     setToast(message);
     window.setTimeout(() => setToast(null), 2500);
   };
 
   const handleNodeClick = (node: NodeConfig) => {
+    if (animating) return;
+
     const isUnlocked = unlockedNodeIds.includes(node.nodeId);
     const hasEnoughSparks = sparks >= node.requiredSparks;
 
@@ -90,21 +273,7 @@ export default function ZoneTrailMap({
     onSelectNode(node);
   };
 
-  // Node coordinates along a gentle winding S-curve (in percentages for responsive SVG path)
-  // 5 nodes from bottom to top (or top to bottom)
-  // Let's layout:
-  // Node 0: (25%, 85%)
-  // Node 1: (68%, 68%)
-  // Node 2: (32%, 50%)
-  // Node 3: (72%, 32%)
-  // Node 4: (50%, 14%)
-  const nodePositions = [
-    { x: 30, y: 84 },
-    { x: 70, y: 67 },
-    { x: 28, y: 50 },
-    { x: 72, y: 33 },
-    { x: 50, y: 15 },
-  ];
+  const zunoDisplayPos = animating ? animPos : nodePositions[latestUnlockedIndex];
 
   return (
     <div className="twilight-sky fixed inset-0 z-30 flex flex-col" id="zone-trail-map">
@@ -144,6 +313,23 @@ export default function ZoneTrailMap({
         </div>
 
         <div className="flex-1" />
+
+        {/* Replay Hop Button */}
+        {!animating && latestUnlockedIndex > 0 && (
+          <button
+            type="button"
+            id="btn-replay-trail-walk"
+            onClick={() => {
+              zunoAudio.playTap();
+              startTrailWalk(latestUnlockedIndex - 1, latestUnlockedIndex);
+            }}
+            title="Watch Zuno hop along the trail!"
+            aria-label="Replay Zuno trail walk"
+            className="zuno-btn-ghost hidden h-12 items-center gap-2 px-3 text-xs font-bold text-zuno-cyan md:flex md:h-14 md:px-4 md:text-sm"
+          >
+            <RotateCcw className="h-4 w-4" /> Watch Hop
+          </button>
+        )}
 
         <div className="glass-card flex h-12 items-center gap-2 rounded-full px-4 md:h-14 md:px-5">
           <Zap className="h-5 w-5 fill-zuno-gold text-zuno-gold md:h-6 md:w-6" />
@@ -208,9 +394,16 @@ export default function ZoneTrailMap({
                 <feMergeNode in="SourceGraphic" />
               </feMerge>
             </filter>
+            <filter id="activeSegmentGlow" x="-30%" y="-30%" width="160%" height="160%">
+              <feGaussianBlur stdDeviation="3" result="blur" />
+              <feMerge>
+                <feMergeNode in="blur" />
+                <feMergeNode in="SourceGraphic" />
+              </feMerge>
+            </filter>
           </defs>
 
-          {/* Glowing dashed trail line */}
+          {/* Standard glowing dashed trail line */}
           <path
             d={`M ${nodePositions[0].x} ${nodePositions[0].y} 
                C 60 78, 65 72, ${nodePositions[1].x} ${nodePositions[1].y}
@@ -222,9 +415,57 @@ export default function ZoneTrailMap({
             strokeWidth="2.2"
             strokeDasharray="3 2"
             filter="url(#trailGlow)"
-            className="animate-pulse"
+            className={animating ? 'opacity-40' : 'animate-pulse'}
           />
+
+          {/* Highlighted Surge Segment when Zuno is walking! */}
+          {activeSegmentIndex !== null && (
+            <path
+              d={`M ${nodePositions[activeSegmentIndex].x} ${nodePositions[activeSegmentIndex].y}
+                 C ${segmentControls[activeSegmentIndex].cp1.x} ${segmentControls[activeSegmentIndex].cp1.y},
+                   ${segmentControls[activeSegmentIndex].cp2.x} ${segmentControls[activeSegmentIndex].cp2.y},
+                   ${nodePositions[activeSegmentIndex + 1].x} ${nodePositions[activeSegmentIndex + 1].y}`}
+              fill="none"
+              stroke="#00f2fe"
+              strokeWidth="4.2"
+              strokeDasharray="2 1"
+              filter="url(#activeSegmentGlow)"
+              className="animate-pulse"
+            />
+          )}
         </svg>
+
+        {/* Trailing Footsteps / Sparkles */}
+        {trailSparkles.map((sp) => (
+          <span
+            key={sp.id}
+            className="animate-pop-in pointer-events-none absolute -translate-x-1/2 -translate-y-1/2 text-sm font-bold drop-shadow-[0_0_8px_rgba(0,242,254,0.9)] md:text-base"
+            style={{
+              left: `${sp.x}%`,
+              top: `${sp.y}%`,
+              color: sp.color,
+            }}
+          >
+            {sp.symbol}
+          </span>
+        ))}
+
+        {/* Confetti Explosion Pieces */}
+        {confetti.map((c) => (
+          <div
+            key={c.id}
+            className="animate-float pointer-events-none absolute rounded-sm"
+            style={{
+              left: `${c.x}%`,
+              top: `${c.y}%`,
+              width: `${c.size}px`,
+              height: `${c.size}px`,
+              backgroundColor: c.color,
+              transform: `rotate(${c.rot}deg)`,
+              boxShadow: `0 0 10px ${c.color}`,
+            }}
+          />
+        ))}
 
         {/* Interactive Trail Nodes */}
         <div className="absolute inset-0">
@@ -243,18 +484,6 @@ export default function ZoneTrailMap({
                 className="absolute -translate-x-1/2 -translate-y-1/2"
                 style={{ left: `${pos.x}%`, top: `${pos.y}%` }}
               >
-                {/* Zuno Mascot Sitting physically on the Current Node! */}
-                {isCurrent && (
-                  <div className="animate-float pointer-events-none absolute -top-20 left-1/2 z-20 -translate-x-1/2 md:-top-24">
-                    <ZunoMascot mood="HAPPY_LEAP" size={90} />
-                    <div className="mt-[-8px] text-center">
-                      <span className="rounded-full bg-zuno-cyan/80 px-2 py-0.5 text-[11px] font-bold text-zuno-night shadow-glow-cyan">
-                        Zuno is here!
-                      </span>
-                    </div>
-                  </div>
-                )}
-
                 {/* Trail Node Button */}
                 <button
                   type="button"
@@ -325,7 +554,76 @@ export default function ZoneTrailMap({
             );
           })}
         </div>
+
+        {/* Dynamic Animated Zuno Mascot sitting / hopping along the trail */}
+        <div
+          className="pointer-events-none absolute -translate-x-1/2 -translate-y-1/2 z-20 transition-transform"
+          style={{
+            left: `${zunoDisplayPos.x}%`,
+            top: `${zunoDisplayPos.y - 10}%`,
+          }}
+        >
+          <div className={clsx('flex flex-col items-center', !animating && 'animate-float')}>
+            <ZunoMascot mood={animating ? 'HAPPY_LEAP' : 'AWAKE_POP'} size={94} />
+            <div className="mt-[-6px] text-center">
+              <span className="rounded-full bg-zuno-cyan/90 px-2.5 py-0.5 text-[11px] font-bold text-zuno-night shadow-glow-cyan">
+                {animating ? 'Hopping ahead! 🐾' : 'Zuno is here!'}
+              </span>
+            </div>
+          </div>
+        </div>
       </main>
+
+      {/* Celebratory Unlock Modal Dialogue upon reaching a new spot! */}
+      {unlockedModalNode && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-zuno-night/80 p-4 backdrop-blur-md"
+        >
+          <div className="glass-card animate-pop-in relative flex max-w-sm flex-col items-center gap-3 border-2 border-zuno-gold/60 p-6 text-center shadow-glow-gold">
+            <div className="animate-float -mt-10">
+              <ZunoMascot mood="HAPPY_LEAP" size={140} />
+            </div>
+
+            <span className="rounded-full bg-zuno-gold/20 px-3 py-1 text-xs font-bold text-zuno-gold">
+              🌟 Trail Spot Unlocked!
+            </span>
+
+            <h2 className="text-gradient text-3xl font-bold">
+              {unlockedModalNode.title}
+            </h2>
+
+            <p className="text-base text-zuno-lavender/80">
+              Zuno hopped all the way to Spot {unlockedModalNode.nodeIndex + 1}! Your Wait-Power opened the path!
+            </p>
+
+            <button
+              type="button"
+              id="btn-play-unlocked-spot"
+              onClick={() => {
+                zunoAudio.playTap();
+                setUnlockedModalNode(null);
+                onSelectNode(unlockedModalNode);
+              }}
+              className="zuno-btn-primary mt-2 min-h-[64px] w-full text-xl"
+            >
+              <Play className="h-6 w-6" fill="currentColor" /> Play This Spot!
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                zunoAudio.playTap();
+                setUnlockedModalNode(null);
+              }}
+              className="text-sm font-semibold text-zuno-lavender/60 hover:text-zuno-lavender"
+            >
+              Explore Map First
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
