@@ -7,10 +7,23 @@
   "scripts": {
     "dev": "vite --host",
     "build": "tsc && vite build",
+    "build:cap": "tsc && vite build --mode capacitor",
+    "cap:sync": "npm run build:cap && cap sync android",
+    "cap:open": "cap open android",
+    "cap:assets": "node scripts/generate-android-assets.cjs",
+    "cap:build:debug": "npm run build:cap && cap sync android && node scripts/build-android.cjs debug",
+    "cap:build:release": "npm run build:cap && cap sync android && node scripts/build-android.cjs release",
     "preview": "vite preview --host",
     "typecheck": "tsc"
   },
   "dependencies": {
+    "@capacitor/android": "^8.6.0",
+    "@capacitor/app": "^8.1.2",
+    "@capacitor/core": "^8.6.0",
+    "@capacitor/haptics": "^8.0.2",
+    "@capacitor/screen-orientation": "^8.0.2",
+    "@capacitor/splash-screen": "^8.0.2",
+    "@capacitor/status-bar": "^8.0.4",
     "@fontsource/fredoka": "^5.3.0",
     "clsx": "^2.1.1",
     "dexie": "^4.4.7",
@@ -21,6 +34,8 @@
     "zustand": "^5.0.16"
   },
   "devDependencies": {
+    "@capacitor/assets": "^4.0.0",
+    "@capacitor/cli": "^8.6.0",
     "@types/react": "^18.3.31",
     "@types/react-dom": "^18.3.7",
     "@vitejs/plugin-react": "^4.7.0",

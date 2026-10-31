@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import clsx from 'clsx';
+import { Capacitor } from '@capacitor/core';
 import {
   ArrowLeft,
   Crown,
@@ -96,12 +97,16 @@ export default function ZoneTrailMap({
   const toggleMuted = useZunoStore((s) => s.toggleMuted);
   const trailCelebration = useZunoStore((s) => s.trailCelebration);
   const clearTrailCelebration = useZunoStore((s) => s.clearTrailCelebration);
+  const isFullAdventureUnlocked = useZunoStore((s) => s.isFullAdventureUnlocked);
+  const openPaywall = useZunoStore((s) => s.openPaywall);
+  const isNative = Capacitor.isNativePlatform();
 
   const unlockedNodeIds = explorer.unlockedNodes?.[zoneId] ?? [trail[0].nodeId];
   const sparks = explorer.sparksCollected ?? 0;
 
-  // The latest unlocked node where Zuno currently rests
+  // The latest unlocked node where Zuno currently rests (capped at Spot 1 on native Android if not purchased)
   const latestUnlockedIndex = trail.reduce((acc, node, idx) => {
+    if (isNative && idx > 0 && !isFullAdventureUnlocked) return acc;
     return unlockedNodeIds.includes(node.nodeId) && sparks >= node.requiredSparks ? idx : acc;
   }, 0);
 
@@ -254,6 +259,14 @@ export default function ZoneTrailMap({
   const handleNodeClick = (node: NodeConfig) => {
     if (animating) return;
 
+    // On native Android, Spots 2-5 require the one-time $19 Full Adventure Pass.
+    // On web/PWA, all spots are 100% free!
+    if (isNative && node.nodeIndex > 0 && !isFullAdventureUnlocked) {
+      zunoAudio.playSoftMiss();
+      openPaywall({ zoneId, nodeId: node.nodeId });
+      return;
+    }
+
     const isUnlocked = unlockedNodeIds.includes(node.nodeId);
     const hasEnoughSparks = sparks >= node.requiredSparks;
 
@@ -328,6 +341,23 @@ export default function ZoneTrailMap({
             className="zuno-btn-ghost hidden h-12 items-center gap-2 px-3 text-xs font-bold text-zuno-cyan md:flex md:h-14 md:px-4 md:text-sm"
           >
             <RotateCcw className="h-4 w-4" /> Watch Hop
+          </button>
+        )}
+
+        {isNative && !isFullAdventureUnlocked && (
+          <button
+            type="button"
+            id="btn-trail-full-pass"
+            onClick={() => {
+              zunoAudio.playTap();
+              openPaywall({ zoneId });
+            }}
+            aria-label="Unlock Full Adventure for nineteen dollars"
+            className="flex h-10 items-center gap-1.5 rounded-full border border-zuno-gold/60 bg-gradient-to-r from-amber-500/20 via-yellow-500/20 to-amber-500/20 px-3 py-1 text-xs font-bold text-zuno-gold shadow-glow-gold hover:scale-105 active:scale-95 md:h-12 md:px-4 md:text-sm"
+          >
+            <Crown className="h-4 w-4 fill-zuno-gold" />
+            <span className="hidden sm:inline">Full Pass</span>
+            <span>$19</span>
           </button>
         )}
 
@@ -471,9 +501,10 @@ export default function ZoneTrailMap({
         <div className="absolute inset-0">
           {trail.map((node, index) => {
             const pos = nodePositions[index];
+            const isPaidLocked = isNative && index > 0 && !isFullAdventureUnlocked;
             const isUnlocked = unlockedNodeIds.includes(node.nodeId);
             const hasEnoughSparks = sparks >= node.requiredSparks;
-            const isPlayable = isUnlocked && hasEnoughSparks;
+            const isPlayable = isUnlocked && hasEnoughSparks && !isPaidLocked;
             const isCompleted = index < latestUnlockedIndex || (index === 4 && isPlayable);
             const isCurrent = index === latestUnlockedIndex;
             const Icon = getNodeIcon(node.iconType);
@@ -490,19 +521,30 @@ export default function ZoneTrailMap({
                   id={`trail-node-${node.nodeId}`}
                   onClick={() => handleNodeClick(node)}
                   aria-label={`${node.title}, Spot ${index + 1} of 5. ${
-                    isPlayable ? 'Ready to play' : 'Locked'
+                    isPaidLocked
+                      ? 'Requires Full Adventure Pass'
+                      : isPlayable
+                        ? 'Ready to play'
+                        : 'Locked'
                   }`}
                   className={clsx(
                     'group relative flex h-20 w-20 flex-col items-center justify-center rounded-full border-4 transition-all duration-300 md:h-24 md:w-24',
-                    isPlayable
-                      ? isCurrent
-                        ? 'border-zuno-cyan bg-zuno-cyan/25 shadow-glow-cyan scale-110 animate-glow-pulse'
-                        : 'border-zuno-gold/80 bg-zuno-gold/20 shadow-glow-gold hover:scale-105 active:scale-95'
-                      : 'border-white/10 bg-zuno-night/80 opacity-60 hover:opacity-80',
+                    isPaidLocked
+                      ? 'border-zuno-gold/60 bg-zuno-night/90 shadow-glow-gold hover:border-zuno-gold hover:scale-105 active:scale-95'
+                      : isPlayable
+                        ? isCurrent
+                          ? 'border-zuno-cyan bg-zuno-cyan/25 shadow-glow-cyan scale-110 animate-glow-pulse'
+                          : 'border-zuno-gold/80 bg-zuno-gold/20 shadow-glow-gold hover:scale-105 active:scale-95'
+                        : 'border-white/10 bg-zuno-night/80 opacity-60 hover:opacity-80',
                   )}
                 >
                   {/* Icon */}
-                  {isPlayable ? (
+                  {isPaidLocked ? (
+                    <div className="flex flex-col items-center gap-0.5">
+                      <Lock className="h-6 w-6 text-zuno-gold md:h-7 md:w-7" />
+                      <span className="text-[10px] font-bold text-zuno-gold">Pass</span>
+                    </div>
+                  ) : isPlayable ? (
                     <Icon
                       className={clsx(
                         'h-9 w-9 transition-transform duration-200 group-hover:scale-110 md:h-11 md:w-11',
@@ -530,12 +572,14 @@ export default function ZoneTrailMap({
                   <span
                     className={clsx(
                       'absolute -bottom-2.5 rounded-full px-2.5 py-0.5 text-xs font-bold transition-colors',
-                      isPlayable
-                        ? 'bg-zuno-night border border-zuno-gold text-zuno-gold'
-                        : 'bg-white/10 text-zuno-lavender/40',
+                      isPaidLocked
+                        ? 'bg-zuno-night border border-zuno-gold/80 text-zuno-gold'
+                        : isPlayable
+                          ? 'bg-zuno-night border border-zuno-gold text-zuno-gold'
+                          : 'bg-white/10 text-zuno-lavender/40',
                     )}
                   >
-                    {index + 1}
+                    {isPaidLocked ? `Spot ${index + 1}` : index + 1}
                   </span>
                 </button>
 

@@ -2,8 +2,11 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 
-export default defineConfig({
-  base: '/zunospark/',
+export default defineConfig(({ mode }) => {
+  const isCapacitor = mode === 'capacitor' || process.env.CAPACITOR === 'true';
+
+  return {
+    base: isCapacitor ? './' : '/zunospark/',
   plugins: [
     react(),
     VitePWA({
@@ -11,7 +14,7 @@ export default defineConfig({
       injectRegister: 'auto',
       includeAssets: ['zuno-icon.svg', 'zuno-maskable.svg'],
       manifest: {
-        id: '/zunospark/',
+        id: isCapacitor ? '/' : '/zunospark/',
         name: 'ZunoSpark: Wait-Power & Focus Trainer',
         short_name: 'ZunoSpark',
         description:
@@ -21,8 +24,8 @@ export default defineConfig({
         display: 'fullscreen',
         display_override: ['fullscreen', 'standalone'],
         orientation: 'any',
-        start_url: '/zunospark/',
-        scope: '/zunospark/',
+        start_url: isCapacitor ? '/' : '/zunospark/',
+        scope: isCapacitor ? '/' : '/zunospark/',
         categories: ['education', 'kids', 'games'],
         icons: [
           { src: 'zuno-icon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any' },
@@ -42,4 +45,5 @@ export default defineConfig({
       },
     }),
   ],
+};
 });

@@ -11,6 +11,8 @@ import HoldButton from './components/HoldButton';
 import ParentSparkDashboard, { ParentGateButton } from './components/ParentSparkDashboard';
 import ZunoMascot from './components/ZunoMascot';
 import ZoneTrailMap from './components/ZoneTrailMap';
+import PaywallModal from './components/PaywallModal';
+import { initCapacitorBridge, triggerHaptic } from './services/capacitorBridge';
 
 const ZONE_ORDER: ZoneId[] = ['spark_berry', 'thunder_chimes', 'twin_currents'];
 
@@ -128,6 +130,7 @@ function Hub({ explorers, activeExplorer }: HubProps) {
                 id={`pill-explorer-${explorer.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`}
                 onClick={() => {
                   zunoAudio.playTap();
+                  triggerHaptic('light');
                   switchExplorer(explorer);
                 }}
                 aria-pressed={active}
@@ -223,6 +226,7 @@ function Hub({ explorers, activeExplorer }: HubProps) {
                   onClick={() => {
                     zunoAudio.unlock();
                     zunoAudio.playTap();
+                    triggerHaptic('medium');
                     openZoneTrail(zoneId);
                   }}
                   className="zuno-btn-primary mt-auto min-h-[68px] w-full text-xl"
@@ -269,6 +273,12 @@ export default function App() {
       cancelled = true;
     };
   }, []);
+
+  useEffect(() => {
+    if (seeded) {
+      initCapacitorBridge();
+    }
+  }, [seeded]);
 
   // Keep the store's active explorer in sync with live IndexedDB data (sparks, unlocks, new profiles).
   useEffect(() => {
@@ -320,6 +330,8 @@ export default function App() {
       {showParentDashboard && <ParentSparkDashboard onClose={() => toggleParentDashboard(false)} />}
 
       {cooldown && <CozyCoolDown />}
+
+      <PaywallModal />
     </>
   );
 }

@@ -1,6 +1,8 @@
 import { create } from 'zustand';
+import { Capacitor } from '@capacitor/core';
 import type { ExplorerProfile, ZoneId } from '../db/zunoDb';
 import { zunoAudio } from '../audio/ZunoSynth';
+import { getNodeConfig } from '../data/zoneNodes';
 
 /** Rounds allowed before Zuno curls up for the Cozy Cool-Down. */
 export const COZY_ROUND_LIMIT = 3;
@@ -57,6 +59,21 @@ export interface TrailCelebration {
   unlockedNodeId: string;
 }
 
+function isNativeAndroid(): boolean {
+  return typeof window !== 'undefined' && Capacitor.isNativePlatform();
+}
+
+function loadIapUnlocked(): boolean {
+  // On web/PWA (browsers), all clearings and levels are 100% free!
+  if (!isNativeAndroid()) return true;
+
+  try {
+    return window.localStorage.getItem('zunospark.iap.unlocked.v1') === '1';
+  } catch {
+    return false;
+  }
+}
+
 interface ZunoState {
   activeExplorer: ExplorerProfile | null;
   activeZone: ZoneId | null;
@@ -67,6 +84,9 @@ interface ZunoState {
   cozyRoundCount: number;
   showParentDashboard: boolean;
   trailCelebration: TrailCelebration | null;
+  isFullAdventureUnlocked: boolean;
+  showPaywallModal: boolean;
+  pendingPaywallNode: { zoneId: ZoneId; nodeId?: string } | null;
 
   switchExplorer: (explorer: ExplorerProfile | null) => void;
   openZoneTrail: (zone: ZoneId) => void;
@@ -80,6 +100,9 @@ interface ZunoState {
   resetCooldown: () => void;
   toggleParentDashboard: (force?: boolean) => void;
   toggleMuted: () => void;
+  openPaywall: (node?: { zoneId: ZoneId; nodeId?: string }) => void;
+  closePaywall: () => void;
+  setFullAdventureUnlocked: (unlocked: boolean) => void;
 }
 
 const initialMuted = typeof window === 'undefined' ? false : loadMuted();
@@ -95,6 +118,9 @@ export const useZunoStore = create<ZunoState>((set, get) => ({
   cozyRoundCount: typeof window === 'undefined' ? 0 : loadCozyCount(),
   showParentDashboard: false,
   trailCelebration: null,
+  isFullAdventureUnlocked: loadIapUnlocked(),
+  showPaywallModal: false,
+  pendingPaywallNode: null,
 
   switchExplorer: (explorer) => set({ activeExplorer: explorer, activeZone: null, activeTrailZone: null, trailCelebration: null }),
 
@@ -103,11 +129,21 @@ export const useZunoStore = create<ZunoState>((set, get) => ({
 
   startNode: (zone, nodeId) => {
     if (get().cozyRoundCount >= COZY_ROUND_LIMIT) return;
+    const config = getNodeConfig(zone, nodeId);
+    // On native Android, Spots 2-5 require the $19 purchase. On web, all spots are free!
+    if (isNativeAndroid() && config.nodeIndex > 0 && !get().isFullAdventureUnlocked) {
+      set({ showPaywallModal: true, pendingPaywallNode: { zoneId: zone, nodeId } });
+      return;
+    }
     set({ activeZone: zone, activeNodeId: nodeId, trailCelebration: null });
   },
 
   startZone: (zone, level) => {
     if (get().cozyRoundCount >= COZY_ROUND_LIMIT) return;
+    if (isNativeAndroid() && level > 1 && !get().isFullAdventureUnlocked) {
+      set({ showPaywallModal: true, pendingPaywallNode: null });
+      return;
+    }
     set({ activeZone: zone, activeLevel: level, trailCelebration: null });
   },
 
@@ -136,4 +172,11 @@ export const useZunoStore = create<ZunoState>((set, get) => ({
     writeStorage(MUTE_STORAGE_KEY, muted ? '1' : '0');
     set({ muted });
   },
+
+  openPaywall: (node) => {
+    if (!isNativeAndroid()) return; // Never show paywall on web/PWA
+    set({ showPaywallModal: true, pendingPaywallNode: node || null });
+  },
+  closePaywall: () => set({ showPaywallModal: false, pendingPaywallNode: null }),
+  setFullAdventureUnlocked: (unlocked) => set({ isFullAdventureUnlocked: unlocked }),
 }));
