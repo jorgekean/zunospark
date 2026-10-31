@@ -204,13 +204,13 @@ export default function GameStage({ explorerId, zoneId, level, nodeConfig, onExi
 
   return (
     <div className="twilight-sky fixed inset-0 z-30 flex flex-col" id="game-stage">
-      <header className="flex h-16 shrink-0 items-center gap-3 border-b border-white/10 bg-zuno-night/70 px-3 backdrop-blur md:h-20 md:px-6">
+      <header className="safe-header relative z-40 flex shrink-0 items-center gap-3 border-b border-white/10 bg-zuno-night/75 backdrop-blur md:px-6">
         <button
           type="button"
           id="btn-exit-zone"
           onClick={onExit}
           aria-label="Back to the Twilight Forest"
-          className="zuno-btn-ghost h-12 w-12 shrink-0 md:h-14 md:w-14"
+          className="zuno-btn-ghost relative z-50 h-12 w-12 shrink-0 touch-manipulation after:absolute after:-inset-2 after:content-[''] md:h-14 md:w-14"
         >
           <ArrowLeft className="h-6 w-6" />
         </button>

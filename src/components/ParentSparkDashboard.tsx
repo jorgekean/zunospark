@@ -216,7 +216,7 @@ export default function ParentSparkDashboard({ onClose }: ParentSparkDashboardPr
   return (
     <div className="fixed inset-0 z-[60] flex items-stretch justify-center bg-zuno-night/90 backdrop-blur-md md:p-6" role="dialog" aria-modal="true" aria-label="Parent ROI dashboard">
       <div className="glass-card flex h-full w-full max-w-5xl flex-col overflow-hidden md:rounded-[2rem]">
-        <header className="flex shrink-0 items-center gap-3 border-b border-white/10 px-4 py-3 md:px-6">
+        <header className="safe-header relative z-40 flex shrink-0 items-center gap-3 border-b border-white/10 px-4 md:px-6">
           <ChartColumn className="h-7 w-7 text-zuno-cyan" />
           <div className="min-w-0 flex-1">
             <h1 className="truncate text-xl font-bold text-zuno-lavender md:text-2xl">Parent Spark Dashboard</h1>
@@ -224,7 +224,13 @@ export default function ParentSparkDashboard({ onClose }: ParentSparkDashboardPr
               <CloudOff className="h-4 w-4" /> Stored privately on this device — works fully offline.
             </p>
           </div>
-          <button type="button" id="btn-close-dashboard" onClick={onClose} aria-label="Close dashboard" className="zuno-btn-ghost h-12 w-12">
+          <button
+            type="button"
+            id="btn-close-dashboard"
+            onClick={onClose}
+            aria-label="Close dashboard"
+            className="zuno-btn-ghost relative z-50 h-12 w-12 shrink-0 touch-manipulation after:absolute after:-inset-2 after:content-['']"
+          >
             <X className="h-6 w-6" />
           </button>
         </header>

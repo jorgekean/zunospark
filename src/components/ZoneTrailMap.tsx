@@ -278,7 +278,7 @@ export default function ZoneTrailMap({
   return (
     <div className="twilight-sky fixed inset-0 z-30 flex flex-col" id="zone-trail-map">
       {/* Header */}
-      <header className="flex h-16 shrink-0 items-center gap-3 border-b border-white/10 bg-zuno-night/80 px-4 backdrop-blur md:h-20 md:px-8">
+      <header className="safe-header relative z-40 flex shrink-0 items-center gap-3 border-b border-white/10 bg-zuno-night/85 backdrop-blur md:px-8">
         <button
           type="button"
           id="btn-trail-back"
@@ -287,7 +287,7 @@ export default function ZoneTrailMap({
             onBack();
           }}
           aria-label="Back to Twilight Woods"
-          className="zuno-btn-ghost h-12 w-12 shrink-0 md:h-14 md:w-14"
+          className="zuno-btn-ghost relative z-50 h-12 w-12 shrink-0 touch-manipulation after:absolute after:-inset-2 after:content-[''] md:h-14 md:w-14"
         >
           <ArrowLeft className="h-6 w-6" />
         </button>
@@ -351,7 +351,7 @@ export default function ZoneTrailMap({
       {toast && (
         <div
           role="status"
-          className="animate-pop-in fixed top-24 left-1/2 z-50 -translate-x-1/2 rounded-full border border-zuno-gold/50 bg-zuno-night/95 px-6 py-3 text-base font-bold text-zuno-gold shadow-glow-gold backdrop-blur-md"
+          className="animate-pop-in fixed top-[calc(5rem+env(safe-area-inset-top,0px))] left-1/2 z-50 -translate-x-1/2 rounded-full border border-zuno-gold/50 bg-zuno-night/95 px-6 py-3 text-base font-bold text-zuno-gold shadow-glow-gold backdrop-blur-md"
         >
           {toast}
         </div>

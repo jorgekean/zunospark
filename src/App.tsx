@@ -97,7 +97,7 @@ function Hub({ explorers, activeExplorer }: HubProps) {
         ))}
       </div>
 
-      <div className="relative mx-auto flex min-h-full w-full max-w-6xl flex-col gap-4 px-4 py-4 md:gap-6 md:px-8 md:py-6">
+      <div className="safe-top safe-bottom safe-x relative mx-auto flex min-h-full w-full max-w-6xl flex-col gap-4 px-4 pb-6 md:gap-6 md:px-8 md:py-6">
         <header className="flex flex-wrap items-center gap-3 md:gap-5">
           <div className="animate-float -my-2">
             <ZunoMascot mood="AWAKE_POP" size={150} />
