@@ -128,7 +128,6 @@ export const useZunoStore = create<ZunoState>((set, get) => ({
   closeZoneTrail: () => set({ activeTrailZone: null, trailCelebration: null }),
 
   startNode: (zone, nodeId) => {
-    if (get().cozyRoundCount >= COZY_ROUND_LIMIT) return;
     const config = getNodeConfig(zone, nodeId);
     // On native Android, Spots 2-5 require the $19 purchase. On web, all spots are free!
     if (isNativeAndroid() && config.nodeIndex > 0 && !get().isFullAdventureUnlocked) {
@@ -139,7 +138,6 @@ export const useZunoStore = create<ZunoState>((set, get) => ({
   },
 
   startZone: (zone, level) => {
-    if (get().cozyRoundCount >= COZY_ROUND_LIMIT) return;
     if (isNativeAndroid() && level > 1 && !get().isFullAdventureUnlocked) {
       set({ showPaywallModal: true, pendingPaywallNode: null });
       return;

@@ -1,9 +1,10 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import clsx from 'clsx';
-import { ArrowLeft, Music, Play, RotateCcw, Sprout, Star, Volume2, VolumeX, Waypoints, Zap, type LucideIcon } from 'lucide-react';
+import { ArrowLeft, Heart, Music, Play, RotateCcw, Sparkles, Sprout, Star, Volume2, VolumeX, Waypoints, Zap, type LucideIcon } from 'lucide-react';
 import { recordSession, type ZoneId } from '../db/zunoDb';
 import { zunoAudio } from '../audio/ZunoSynth';
-import { COZY_ROUND_LIMIT, useZunoStore } from '../store/useZunoStore';
+import { useZunoStore } from '../store/useZunoStore';
+import { triggerHaptic } from '../services/capacitorBridge';
 import ZunoMascot from './ZunoMascot';
 import SparkBerryZone from './zones/SparkBerryZone';
 import ThunderChimesZone from './zones/ThunderChimesZone';
@@ -123,7 +124,7 @@ export default function GameStage({ explorerId, zoneId, level, nodeConfig, onExi
   const muted = useZunoStore((s) => s.muted);
   const toggleMuted = useZunoStore((s) => s.toggleMuted);
   const completeRound = useZunoStore((s) => s.completeRound);
-  const cozyRoundCount = useZunoStore((s) => s.cozyRoundCount);
+  const toggleParentDashboard = useZunoStore((s) => s.toggleParentDashboard);
 
   const [phase, setPhase] = useState<StagePhase>('intro');
   const [completed, setCompleted] = useState(0);
@@ -131,8 +132,6 @@ export default function GameStage({ explorerId, zoneId, level, nodeConfig, onExi
   const [result, setResult] = useState<RoundResult | null>(null);
   const [saved, setSaved] = useState<SavedSummary | null>(null);
   const finishedRef = useRef(false);
-
-  const cooldownReached = cozyRoundCount >= COZY_ROUND_LIMIT;
 
   const start = (): void => {
     zunoAudio.unlock();
@@ -153,6 +152,9 @@ export default function GameStage({ explorerId, zoneId, level, nodeConfig, onExi
       finishedRef.current = true;
       setResult(round);
       setPhase('result');
+      zunoAudio.playWaitPowerWin();
+      triggerHaptic('success');
+
       void recordSession(
         {
           explorerId,
@@ -170,7 +172,6 @@ export default function GameStage({ explorerId, zoneId, level, nodeConfig, onExi
         .then(({ unlockedNext, unlockedNextNode }) => {
           setSaved({ unlockedNext, unlockedNextNode });
           if (unlockedNextNode) {
-            zunoAudio.playWaitPowerWin();
             triggerTrailCelebration({
               zoneId,
               fromIndex: activeNodeConfig.nodeIndex,
@@ -191,13 +192,6 @@ export default function GameStage({ explorerId, zoneId, level, nodeConfig, onExi
     },
     [activeLevel, activeNodeConfig.nodeId, activeNodeConfig.nodeIndex, completeRound, explorerId, triggerTrailCelebration, zoneId],
   );
-
-  // After the third round Zuno gets sleepy: leave automatically so the Cozy Cool-Down can take over.
-  useEffect(() => {
-    if (phase !== 'result' || !cooldownReached) return undefined;
-    const id = window.setTimeout(onExit, 4800);
-    return () => window.clearTimeout(id);
-  }, [phase, cooldownReached, onExit]);
 
   const Icon = info.Icon;
   const stars = result ? starsFor(result) : 0;
@@ -280,60 +274,111 @@ export default function GameStage({ explorerId, zoneId, level, nodeConfig, onExi
         )}
 
         {phase === 'result' && result && (
-          <div className="scroll-zone absolute inset-0 z-20 flex items-center justify-center bg-zuno-night/70 p-4 backdrop-blur-sm">
-            <section className="glass-card animate-pop-in flex max-h-full w-full max-w-xl flex-col items-center gap-3 p-5 text-center md:p-8" aria-live="polite">
-              <ZunoMascot mood={cooldownReached ? 'SLEEP_PAUSE' : 'HAPPY_LEAP'} size={170} />
-              <h2 className="text-gradient text-3xl font-bold md:text-4xl">
-                {cooldownReached ? 'Zuno is getting sleepy…' : 'Zuno is so proud!'}
+          <div className="scroll-zone absolute inset-0 z-20 flex items-center justify-center bg-zuno-night/75 p-4 backdrop-blur-sm">
+            <section className="glass-card animate-pop-in relative flex max-h-full w-full max-w-xl flex-col items-center gap-3.5 p-5 text-center md:p-8" aria-live="polite">
+              {/* Particle glow ring around celebrating Zuno */}
+              <div className="relative">
+                <div className="absolute -inset-5 rounded-full bg-gradient-to-r from-zuno-gold/30 via-zuno-cyan/30 to-zuno-violet/30 blur-xl animate-pulse" />
+                <div className="relative animate-float">
+                  <ZunoMascot mood="HAPPY_LEAP" size={175} />
+                </div>
+              </div>
+
+              {/* Option A Heading & Subtext */}
+              <h2 className="text-gradient text-3xl font-bold leading-tight md:text-5xl">
+                Zuno’s Tail is Fully Charged!
               </h2>
+              <p className="max-w-md text-base font-semibold text-zuno-gold md:text-xl">
+                You earned +{result.sparksEarned} Sparks today and grew your Superpower! ⚡
+              </p>
+
+              {/* Star Rating */}
               <div className="flex gap-2" aria-label={`${stars} of 3 stars`}>
                 {[1, 2, 3].map((n) => (
                   <Star
                     key={n}
-                    className={clsx('h-12 w-12 transition-all duration-500 md:h-14 md:w-14', n <= stars ? 'fill-zuno-gold text-zuno-gold drop-shadow-[0_0_14px_rgba(251,191,36,0.9)]' : 'text-white/20')}
+                    className={clsx(
+                      'h-11 w-11 transition-all duration-500 md:h-14 md:w-14',
+                      n <= stars ? 'fill-zuno-gold text-zuno-gold drop-shadow-[0_0_14px_rgba(251,191,36,0.9)]' : 'text-white/20',
+                    )}
                     style={{ transitionDelay: `${n * 160}ms` }}
                   />
                 ))}
               </div>
+
+              {/* 3 Metric Badges */}
               <div className="grid w-full grid-cols-3 gap-2 text-center">
-                <div className="rounded-2xl bg-white/5 p-3">
+                <div className="rounded-2xl border border-white/10 bg-white/5 p-3">
                   <p className="text-2xl font-bold text-zuno-gold md:text-3xl">{result.waitPowerScore}%</p>
                   <p className="text-xs text-zuno-lavender/70 md:text-sm">Wait-Power</p>
                 </div>
-                <div className="rounded-2xl bg-white/5 p-3">
+                <div className="rounded-2xl border border-white/10 bg-white/5 p-3">
                   <p className="text-2xl font-bold text-zuno-cyan md:text-3xl">{result.popAccuracyScore}%</p>
                   <p className="text-xs text-zuno-lavender/70 md:text-sm">Pop Accuracy</p>
                 </div>
-                <div className="rounded-2xl bg-white/5 p-3">
+                <div className="rounded-2xl border border-white/10 bg-white/5 p-3">
                   <p className="flex items-center justify-center gap-1 text-2xl font-bold text-zuno-lavender md:text-3xl">
-                    <Zap className="h-6 w-6 text-zuno-gold" /> {result.sparksEarned}
+                    <Zap className="h-6 w-6 text-zuno-gold" /> +{result.sparksEarned}
                   </p>
                   <p className="text-xs text-zuno-lavender/70 md:text-sm">Sparks</p>
                 </div>
               </div>
+
+              {/* Trail Progression Alert */}
               {saved?.unlockedNextNode && (
-                <p className="animate-pop-in rounded-full border border-zuno-cyan bg-zuno-cyan/20 px-5 py-2 text-lg font-bold text-zuno-cyan shadow-glow-cyan">
+                <p className="animate-pop-in rounded-full border border-zuno-cyan bg-zuno-cyan/20 px-5 py-2 text-base font-bold text-zuno-cyan shadow-glow-cyan md:text-lg">
                   🌟 Next Trail Spot Unlocked! Zuno is walking ahead!
                 </p>
               )}
               {saved?.unlockedNext && !saved?.unlockedNextNode && (
-                <p className="animate-pop-in rounded-full bg-zuno-gold/20 px-5 py-2 text-lg font-bold text-zuno-gold">
+                <p className="animate-pop-in rounded-full bg-zuno-gold/20 px-5 py-2 text-base font-bold text-zuno-gold md:text-lg">
                   🔓 Level {saved.unlockedNext} unlocked!
                 </p>
               )}
-              {cooldownReached && (
-                <p className="text-base text-zuno-lavender/80">Great job today! Time to play outside — Zuno needs a nap.</p>
-              )}
-              <div className="mt-1 flex w-full flex-col gap-3 sm:flex-row">
-                {!cooldownReached && (
-                  <button type="button" id="btn-play-again" onClick={start} className="zuno-btn-primary min-h-[68px] flex-1 text-xl">
-                    <RotateCcw className="h-6 w-6" /> Play again
-                  </button>
-                )}
-                <button type="button" id="btn-back-to-forest" onClick={onExit} className="zuno-btn-gold min-h-[68px] flex-1 text-xl">
-                  Back to the Trail
+
+              {/* The Dual-Action Buttons */}
+              <div className="mt-2 flex w-full flex-col gap-3 sm:flex-row">
+                <button
+                  type="button"
+                  id="btn-back-to-forest"
+                  onClick={() => {
+                    zunoAudio.playTap();
+                    triggerHaptic('medium');
+                    onExit();
+                  }}
+                  className="zuno-btn-primary min-h-[64px] flex-1 text-lg font-bold shadow-glow-cyan md:text-xl"
+                >
+                  <Sparkles className="h-6 w-6" /> Back to Forest Map
+                </button>
+
+                <button
+                  type="button"
+                  id="btn-show-parents"
+                  onClick={() => {
+                    zunoAudio.playTap();
+                    triggerHaptic('success');
+                    toggleParentDashboard(true);
+                    onExit();
+                  }}
+                  className="zuno-btn-gold min-h-[64px] flex-1 text-lg font-bold shadow-glow-gold md:text-xl"
+                >
+                  <Heart className="h-6 w-6 fill-rose-300 text-rose-300" /> Show Mom & Dad
                 </button>
               </div>
+
+              {/* Replay Option */}
+              <button
+                type="button"
+                id="btn-play-again"
+                onClick={() => {
+                  zunoAudio.playTap();
+                  triggerHaptic('light');
+                  start();
+                }}
+                className="zuno-btn-ghost mt-0.5 min-h-[44px] w-full text-sm font-semibold text-zuno-lavender/80 hover:text-white md:text-base"
+              >
+                <RotateCcw className="h-4 w-4" /> Play This Spot Again
+              </button>
             </section>
           </div>
         )}

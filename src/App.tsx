@@ -7,7 +7,6 @@ import { ZONE_TRAILS, getDefaultNodeId, getNodeConfig } from './data/zoneNodes';
 import { zunoAudio } from './audio/ZunoSynth';
 import { COZY_ROUND_LIMIT, useZunoStore } from './store/useZunoStore';
 import GameStage, { ZONE_INFO } from './components/GameStage';
-import HoldButton from './components/HoldButton';
 import ParentSparkDashboard, { ParentGateButton } from './components/ParentSparkDashboard';
 import ZunoMascot from './components/ZunoMascot';
 import ZoneTrailMap from './components/ZoneTrailMap';
@@ -17,59 +16,19 @@ import { initCapacitorBridge, triggerHaptic } from './services/capacitorBridge';
 const ZONE_ORDER: ZoneId[] = ['spark_berry', 'thunder_chimes', 'twin_currents'];
 
 /* ------------------------------------------------------------------ */
-/*  Cozy Cool-Down overlay                                             */
-/* ------------------------------------------------------------------ */
-
-function CozyCoolDown() {
-  const resetCooldown = useZunoStore((s) => s.resetCooldown);
-
-  useEffect(() => {
-    const id = window.setTimeout(() => zunoAudio.playCozyLullaby(), 500);
-    return () => window.clearTimeout(id);
-  }, []);
-
-  const ideas = ['🦊 Hop like a fox 10 times', '🌳 Run to your favourite tree', '🤸 Stretch up to the stars', '💧 Have a drink of water'];
-
-  return (
-    <div className="twilight-sky fixed inset-0 z-50 flex flex-col items-center justify-center gap-4 p-5 text-center" role="dialog" aria-modal="true" aria-label="Cozy Cool-Down" id="cozy-cooldown">
-      <div className="animate-float">
-        <ZunoMascot mood="SLEEP_PAUSE" size={260} />
-      </div>
-      <h1 className="text-gradient text-4xl font-bold md:text-5xl">Cozy Cool-Down</h1>
-      <p className="max-w-lg text-xl text-zuno-lavender md:text-2xl">
-        Zuno curled up for a nap. 💤<br />Great job, Explorer! Let’s go play outside!
-      </p>
-      <ul className="flex max-w-2xl flex-wrap justify-center gap-2">
-        {ideas.map((idea) => (
-          <li key={idea} className="rounded-full border border-white/15 bg-white/5 px-4 py-2 text-base text-zuno-lavender md:text-lg">
-            {idea}
-          </li>
-        ))}
-      </ul>
-      <HoldButton
-        ariaLabel="Parent Override: Unlock 3 More Rounds. Press and hold for one and a half seconds."
-        onComplete={resetCooldown}
-        className="zuno-btn-ghost mt-3 min-h-[56px] px-6 text-base"
-        fillClassName="bg-zuno-gold/40"
-      >
-        <Lock className="h-5 w-5" /> Parent Override: Unlock 3 More Rounds
-      </HoldButton>
-      <p className="-mt-2 text-xs text-zuno-lavender/50">Grown-ups: press and hold for 1.5 seconds.</p>
-    </div>
-  );
-}
-
-/* ------------------------------------------------------------------ */
 /*  Hub                                                                */
 /* ------------------------------------------------------------------ */
 
 function RoundDots({ count }: { count: number }) {
   return (
-    <div className="flex items-center gap-1.5" aria-label={`${count} of ${COZY_ROUND_LIMIT} rounds played`}>
+    <div className="flex items-center gap-1.5" aria-label={`${count} rounds completed today`}>
       <Moon className="h-5 w-5 text-zuno-lavender/70" />
       {Array.from({ length: COZY_ROUND_LIMIT }, (_, i) => (
         <span key={i} className={clsx('h-3.5 w-3.5 rounded-full transition-all', i < count ? 'bg-zuno-gold shadow-glow-gold' : 'bg-white/15')} />
       ))}
+      {count >= COZY_ROUND_LIMIT && (
+        <span className="ml-1 text-xs font-bold text-zuno-gold">+{count - COZY_ROUND_LIMIT}</span>
+      )}
     </div>
   );
 }
@@ -86,6 +45,9 @@ function Hub({ explorers, activeExplorer }: HubProps) {
   const openZoneTrail = useZunoStore((s) => s.openZoneTrail);
   const cozyRoundCount = useZunoStore((s) => s.cozyRoundCount);
   const toggleParentDashboard = useZunoStore((s) => s.toggleParentDashboard);
+
+  const [dismissedReminder, setDismissedReminder] = useState(false);
+  const [showBreakModal, setShowBreakModal] = useState(false);
 
   return (
     <div className="twilight-sky scroll-zone fixed inset-0" id="hub">
@@ -149,6 +111,56 @@ function Hub({ explorers, activeExplorer }: HubProps) {
           <div className="flex-1" />
           <RoundDots count={cozyRoundCount} />
         </section>
+
+        {/* Soft Daily Reminder Banner (Option A) */}
+        {cozyRoundCount >= COZY_ROUND_LIMIT && !dismissedReminder && (
+          <aside
+            aria-label="Daily training gentle reminder"
+            className="glass-card animate-slide-up flex flex-col items-center justify-between gap-4 rounded-3xl border border-zuno-cyan/40 bg-gradient-to-r from-zuno-cyan/15 via-zuno-violet/20 to-zuno-gold/15 p-4 shadow-glow-cyan md:flex-row md:px-6"
+          >
+            <div className="flex items-center gap-3.5">
+              <div className="animate-float shrink-0">
+                <ZunoMascot mood="AWAKE_POP" size={76} />
+              </div>
+              <div className="text-left">
+                <p className="text-base font-bold text-zuno-lavender md:text-xl">
+                  🦊 &ldquo;Great focus today, Explorer! Ready to go play outside?&rdquo;
+                </p>
+                <p className="text-xs text-zuno-lavender/70 md:text-sm">
+                  You’ve completed {cozyRoundCount} mindful sessions today! You can keep exploring or take a fun break.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex w-full shrink-0 items-center gap-2.5 md:w-auto">
+              <button
+                type="button"
+                id="btn-keep-exploring"
+                onClick={() => {
+                  zunoAudio.playTap();
+                  triggerHaptic('light');
+                  setDismissedReminder(true);
+                }}
+                className="zuno-btn-primary min-h-[46px] flex-1 px-5 text-sm font-bold md:flex-none md:text-base"
+              >
+                Keep Exploring
+              </button>
+
+              <button
+                type="button"
+                id="btn-take-break"
+                onClick={() => {
+                  zunoAudio.playCozyLullaby();
+                  triggerHaptic('medium');
+                  setShowBreakModal(true);
+                }}
+                className="zuno-btn-ghost min-h-[46px] flex-1 border border-zuno-gold/50 px-4 text-sm font-bold text-zuno-gold hover:bg-zuno-gold/10 md:flex-none md:text-base"
+              >
+                Take a Break 🌳
+              </button>
+            </div>
+          </aside>
+        )}
 
         <main className="grid flex-1 gap-4 pb-4 md:grid-cols-3 md:gap-6">
           {ZONE_ORDER.map((zoneId, cardIndex) => {
@@ -238,6 +250,46 @@ function Hub({ explorers, activeExplorer }: HubProps) {
           })}
         </main>
       </div>
+
+      {/* Outdoor Break Ideas Modal (Soft, non-blocking suggestion) */}
+      {showBreakModal && (
+        <div
+          className="twilight-sky fixed inset-0 z-50 flex flex-col items-center justify-center gap-4 p-5 text-center"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Outdoor Explorer Ideas"
+        >
+          <div className="animate-float">
+            <ZunoMascot mood="SLEEP_PAUSE" size={200} />
+          </div>
+          <h2 className="text-gradient text-3xl font-bold md:text-5xl">Outdoor Explorer Ideas! 🌳</h2>
+          <p className="max-w-lg text-lg text-zuno-lavender md:text-xl">
+            Zuno is taking a quick breathing pause. Let&rsquo;s move our bodies and play!
+          </p>
+          <ul className="flex max-w-2xl flex-wrap justify-center gap-2.5">
+            {['🦊 Hop like a fox 10 times', '🌳 Run to your favourite tree', '🤸 Stretch up to the stars', '💧 Have a drink of cool water'].map((idea) => (
+              <li key={idea} className="rounded-full border border-white/15 bg-white/5 px-4 py-2 text-base text-zuno-lavender md:text-lg">
+                {idea}
+              </li>
+            ))}
+          </ul>
+          <div className="mt-3 flex flex-wrap justify-center gap-3">
+            <button
+              type="button"
+              id="btn-break-done"
+              onClick={() => {
+                zunoAudio.playTap();
+                triggerHaptic('light');
+                setShowBreakModal(false);
+                setDismissedReminder(true);
+              }}
+              className="zuno-btn-primary min-h-[54px] px-8 text-lg font-bold"
+            >
+              I&rsquo;m Ready to Play!
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -251,7 +303,6 @@ export default function App() {
   const activeZone = useZunoStore((s) => s.activeZone);
   const activeTrailZone = useZunoStore((s) => s.activeTrailZone);
   const activeNodeId = useZunoStore((s) => s.activeNodeId);
-  const cozyRoundCount = useZunoStore((s) => s.cozyRoundCount);
   const showParentDashboard = useZunoStore((s) => s.showParentDashboard);
   const switchExplorer = useZunoStore((s) => s.switchExplorer);
   const exitZone = useZunoStore((s) => s.exitZone);
@@ -302,8 +353,6 @@ export default function App() {
     );
   }
 
-  const cooldown = cozyRoundCount >= COZY_ROUND_LIMIT && !activeZone;
-
   return (
     <>
       <Hub explorers={explorers} activeExplorer={activeExplorer} />
@@ -328,8 +377,6 @@ export default function App() {
       )}
 
       {showParentDashboard && <ParentSparkDashboard onClose={() => toggleParentDashboard(false)} />}
-
-      {cooldown && <CozyCoolDown />}
 
       <PaywallModal />
     </>
