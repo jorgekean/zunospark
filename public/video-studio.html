@@ -1,0 +1,1120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ZunoSpark 9:16 Video Studio & Exporter</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700;800&family=Outfit:wght@400;600;700;900&display=swap" rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background: radial-gradient(circle at top, #1e1445 0%, #0c0822 60%, #060412 100%);
+      color: #ede9fe;
+      font-family: 'Outfit', -apple-system, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 24px 16px;
+      overflow-x: hidden;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 20px;
+      max-width: 800px;
+    }
+
+    h1 {
+      font-family: 'Fredoka', cursive;
+      font-size: 2.2rem;
+      background: linear-gradient(135deg, #fbbf24 0%, #38bdf8 60%, #c084fc 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 6px;
+    }
+
+    p.subtitle {
+      color: #c4b5fd;
+      font-size: 1rem;
+    }
+
+    .studio-container {
+      display: flex;
+      flex-direction: row;
+      gap: 32px;
+      align-items: flex-start;
+      justify-content: center;
+      width: 100%;
+      max-width: 1100px;
+      flex-wrap: wrap;
+    }
+
+    /* 9:16 Mobile Phone Bezel */
+    .phone-wrapper {
+      position: relative;
+      width: 360px;
+      height: 640px;
+      background: #000;
+      border-radius: 44px;
+      padding: 12px;
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.8), 0 0 40px rgba(56, 189, 248, 0.2), inset 0 0 0 2px rgba(255, 255, 255, 0.15);
+      flex-shrink: 0;
+    }
+
+    .phone-screen {
+      width: 100%;
+      height: 100%;
+      border-radius: 34px;
+      overflow: hidden;
+      position: relative;
+      background: #0a061d;
+    }
+
+    #videoCanvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+      object-fit: cover;
+    }
+
+    .camera-notch {
+      position: absolute;
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 90px;
+      height: 20px;
+      background: #000;
+      border-radius: 12px;
+      z-index: 50;
+      pointer-events: none;
+    }
+
+    /* Controls Panel */
+    .controls-panel {
+      flex: 1;
+      min-width: 320px;
+      max-width: 520px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 28px;
+      padding: 24px;
+      backdrop-filter: blur(16px);
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .panel-section-title {
+      font-size: 0.85rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #fbbf24;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Playback bar */
+    .progress-bar-container {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .time-readout {
+      display: flex;
+      justify-content: space-between;
+      font-family: 'Fredoka', monospace;
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: #38bdf8;
+    }
+
+    .progress-track {
+      width: 100%;
+      height: 10px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 999px;
+      overflow: hidden;
+      cursor: pointer;
+      position: relative;
+    }
+
+    .progress-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #38bdf8, #fbbf24);
+      border-radius: 999px;
+      transition: width 0.08s linear;
+    }
+
+    /* Button rows */
+    .btn-row {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    button {
+      font-family: 'Outfit', sans-serif;
+      font-size: 0.95rem;
+      font-weight: 700;
+      padding: 12px 20px;
+      border-radius: 999px;
+      border: none;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: all 0.2s ease;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #0284c7, #38bdf8);
+      color: #0c0822;
+      box-shadow: 0 4px 20px rgba(56, 189, 248, 0.4);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 25px rgba(56, 189, 248, 0.6);
+    }
+
+    .btn-gold {
+      background: linear-gradient(135deg, #f59e0b, #fbbf24);
+      color: #0c0822;
+      box-shadow: 0 4px 20px rgba(251, 191, 36, 0.4);
+    }
+
+    .btn-gold:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 25px rgba(251, 191, 36, 0.6);
+    }
+
+    .btn-ghost {
+      background: rgba(255, 255, 255, 0.08);
+      color: #ede9fe;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+    }
+
+    .btn-ghost:hover {
+      background: rgba(255, 255, 255, 0.16);
+    }
+
+    /* Scene Jump Grid */
+    .scene-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+    }
+
+    .scene-btn {
+      padding: 10px 12px;
+      font-size: 0.8rem;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.06);
+      color: #c4b5fd;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      text-align: left;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .scene-btn:hover {
+      background: rgba(56, 189, 248, 0.15);
+      border-color: #38bdf8;
+      color: #fff;
+    }
+
+    /* Pure Mobile 9:16 Presentation / Recording Mode */
+    body.pure-mobile {
+      padding: 0 !important;
+      margin: 0 !important;
+      background: #000 !important;
+      height: 100vh;
+      width: 100vw;
+      overflow: hidden;
+      justify-content: center;
+      align-items: center;
+    }
+    body.pure-mobile header,
+    body.pure-mobile .controls-panel {
+      display: none !important;
+    }
+    body.pure-mobile .studio-container {
+      max-width: 100vw !important;
+      height: 100vh !important;
+      margin: 0;
+      padding: 0;
+      justify-content: center;
+      align-items: center;
+    }
+    body.pure-mobile .phone-wrapper {
+      width: 100vw;
+      height: 100vh;
+      max-width: calc(100vh * (9 / 16));
+      border-radius: 0;
+      padding: 0;
+      box-shadow: none;
+      border: none;
+    }
+    body.pure-mobile .phone-screen {
+      border-radius: 0;
+    }
+    body.pure-mobile .camera-notch {
+      display: none;
+    }
+
+    .scene-btn span.title {
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .record-status {
+      font-size: 0.85rem;
+      padding: 10px 14px;
+      border-radius: 12px;
+      background: rgba(251, 191, 36, 0.15);
+      border: 1px solid rgba(251, 191, 36, 0.3);
+      color: #fbbf24;
+      display: none;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .record-indicator {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #ef4444;
+      animation: pulse 1s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(1.3); }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>📱 ZunoSpark 9:16 Video Studio</h1>
+    <p class="subtitle">Mobile-View Marketing Video Creator · High-Dopamine vs. Calm Executive-Function Training</p>
+  </header>
+
+  <div class="studio-container">
+    <!-- 9:16 Mobile Phone Bezel -->
+    <div class="phone-wrapper">
+      <div class="camera-notch"></div>
+      <div class="phone-screen">
+        <canvas id="videoCanvas" width="1080" height="1920"></canvas>
+      </div>
+    </div>
+
+    <!-- Controls Panel -->
+    <div class="controls-panel">
+      <!-- Playback Controls -->
+      <div class="progress-bar-container">
+        <div class="time-readout">
+          <span id="sceneLabel">Scene 1: The Screen Meltdown</span>
+          <span id="timeDisplay">00:00 / 01:00</span>
+        </div>
+        <div class="progress-track" id="progressTrack">
+          <div class="progress-fill" id="progressFill"></div>
+        </div>
+      </div>
+
+      <div class="btn-row">
+        <button id="btnPlayPause" class="btn-primary">
+          <span id="playIcon">▶</span> <span id="playText">Play Video</span>
+        </button>
+        <button id="btnReset" class="btn-ghost">
+          ↺ Restart
+        </button>
+        <button id="btnToggleAudio" class="btn-ghost">
+          🔊 Sound: ON
+        </button>
+      </div>
+
+      <!-- Export Recording -->
+      <div>
+        <div class="panel-section-title">🎬 Video Exporter (WebM / MP4)</div>
+        <p style="font-size: 0.85rem; color: #a78bfa; margin: 6px 0 12px 0;">
+          Generates and records the 9:16 vertical video directly from canvas with marimba audio synthesis.
+        </p>
+        <div class="btn-row">
+          <button id="btnRecord60" class="btn-gold">
+            ⏺ Record & Download (60s)
+          </button>
+          <button id="btnRecord30" class="btn-ghost">
+            ⚡ Quick 30s Short
+          </button>
+        </div>
+        <div id="recordingStatus" class="record-status" style="margin-top: 10px;">
+          <div class="record-indicator"></div>
+          <span id="recordingText">Recording video... Please wait until completed.</span>
+        </div>
+      </div>
+
+      <!-- Scene Jump Navigation -->
+      <div>
+        <div class="panel-section-title">⏱ Scene Navigator</div>
+        <div class="scene-grid" style="margin-top: 8px;">
+          <button class="scene-btn" onclick="seekTo(0)">
+            <span class="title">0:00 - The Meltdown</span>
+            <span>Hyper-dopamine crash</span>
+          </button>
+          <button class="scene-btn" onclick="seekTo(8)">
+            <span class="title">0:08 - The Science</span>
+            <span>Sensory whiplash vs Calm</span>
+          </button>
+          <button class="scene-btn" onclick="seekTo(18)">
+            <span class="title">0:18 - Wait-Power</span>
+            <span>Spot 1: Impulse control</span>
+          </button>
+          <button class="scene-btn" onclick="seekTo(32)">
+            <span class="title">0:32 - Thunder Chimes</span>
+            <span>Spot 2: Auditory memory</span>
+          </button>
+          <button class="scene-btn" onclick="seekTo(44)">
+            <span class="title">0:44 - Calm Transition</span>
+            <span>Zuno's Charged Tail</span>
+          </button>
+          <button class="scene-btn" onclick="seekTo(54)">
+            <span class="title">0:54 - Call to Action</span>
+            <span>Parent ROI & Store link</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Safe Zone Guidelines -->
+      <div style="font-size: 0.8rem; color: rgba(255,255,255,0.5); line-height: 1.4;">
+        ✓ Formatted for TikTok, Instagram Reels, YouTube Shorts, & Meta Ads (1080×1920).<br>
+        ✓ Compliant with vertical mobile UI safe zones (captions centered in the golden zone).
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /* ------------------------------------------------------------- */
+    /*  ZunoSpark 9:16 Video Canvas & WebAudio Synthesis Engine       */
+    /* ------------------------------------------------------------- */
+
+    const canvas = document.getElementById('videoCanvas');
+    const ctx = canvas.getContext('2d');
+    const W = 1080;
+    const H = 1920;
+
+    let isPlaying = false;
+    let currentTime = 0;
+    const TOTAL_DURATION = 60; // 60 seconds
+    let lastTimestamp = null;
+    let soundEnabled = true;
+
+    // WebAudio
+    let audioCtx = null;
+    let mediaDest = null;
+
+    function initAudio() {
+      if (!audioCtx) {
+        const AudioCtor = window.AudioContext || window.webkitAudioContext;
+        audioCtx = new AudioCtor();
+        mediaDest = audioCtx.createMediaStreamDestination();
+      }
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+    }
+
+    function playTone(freq, start, duration, type = 'sine', gainPeak = 0.2) {
+      if (!soundEnabled || !audioCtx) return;
+      const t0 = audioCtx.currentTime + start;
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+
+      osc.type = type;
+      osc.frequency.setValueAtTime(freq, t0);
+
+      gain.gain.setValueAtTime(0.0001, t0);
+      gain.gain.exponentialRampToValueAtTime(gainPeak, t0 + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, t0 + duration);
+
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      if (mediaDest) gain.connect(mediaDest);
+
+      osc.start(t0);
+      osc.stop(t0 + duration + 0.05);
+    }
+
+    function playMarimba(freq, delay = 0) {
+      playTone(freq, delay, 0.45, 'sine', 0.25);
+      playTone(freq * 3, delay, 0.12, 'triangle', 0.08);
+    }
+
+    function playHarpChord() {
+      const notes = [523.25, 659.25, 783.99, 987.77, 1174.66]; // C5, E5, G5, B5, D6
+      notes.forEach((freq, idx) => {
+        playTone(freq, idx * 0.07, 1.4, 'sine', 0.16);
+      });
+    }
+
+    function playBuzzer() {
+      playTone(180, 0, 0.35, 'sawtooth', 0.22);
+    }
+
+    /* ------------------------------------------------------------- */
+    /*  Sound Cues at Specific Timestamps                            */
+    /* ------------------------------------------------------------- */
+    let lastSoundSecond = -1;
+
+    function checkSoundTriggers(sec) {
+      const curSec = Math.floor(sec);
+      if (curSec === lastSoundSecond) return;
+      lastSoundSecond = curSec;
+
+      if (curSec === 1) playBuzzer();
+      if (curSec === 9) playMarimba(523.25); // C5
+      if (curSec === 10) playMarimba(659.25); // E5
+      if (curSec === 22) playMarimba(440); // A4
+      if (curSec === 26) {
+        // Pop win
+        playMarimba(523.25, 0);
+        playMarimba(659.25, 0.1);
+        playMarimba(783.99, 0.2);
+        playMarimba(1046.5, 0.3);
+      }
+      if (curSec === 34) playMarimba(659.25); // Chime 1
+      if (curSec === 36) playMarimba(783.99); // Chime 2
+      if (curSec === 39) {
+        playMarimba(659.25, 0);
+        playMarimba(783.99, 0.15);
+      }
+      if (curSec === 46) playHarpChord(); // Victory chord
+      if (curSec === 55) {
+        playMarimba(523.25, 0);
+        playMarimba(783.99, 0.12);
+      }
+    }
+
+    /* ------------------------------------------------------------- */
+    /*  Rendering Engine (1080 x 1920 9:16 Canvas)                    */
+    /* ------------------------------------------------------------- */
+
+    function drawBackground(t) {
+      // Scene 1: Harsh chaotic red/orange/black (0-8s)
+      if (t < 8) {
+        const flash = Math.sin(t * 12) > 0 ? '#1f030a' : '#080104';
+        ctx.fillStyle = flash;
+        ctx.fillRect(0, 0, W, H);
+
+        // Flashing chaotic shapes
+        ctx.save();
+        ctx.fillStyle = 'rgba(239, 68, 68, 0.15)';
+        for (let i = 0; i < 6; i++) {
+          const x = (Math.sin(t * 8 + i) * 0.5 + 0.5) * W;
+          const y = (Math.cos(t * 6 + i) * 0.5 + 0.5) * H;
+          ctx.beginPath();
+          ctx.arc(x, y, 160 + (i * 20), 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.restore();
+        return;
+      }
+
+      // Scenes 2–6: Deep, soothing twilight sky (#0c0822 to #1e1347)
+      const grad = ctx.createLinearGradient(0, 0, 0, H);
+      grad.addColorStop(0, '#1c1242');
+      grad.addColorStop(0.5, '#0e0828');
+      grad.addColorStop(1, '#060414');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, W, H);
+
+      // Drifting gentle golden fireflies / sparks
+      ctx.save();
+      for (let i = 0; i < 20; i++) {
+        const x = (Math.sin(i * 1.7 + t * 0.2) * 0.5 + 0.5) * W;
+        const y = ((i * 105 + t * 45) % H);
+        const radius = (Math.sin(t + i) * 0.5 + 0.5) * 4 + 2;
+        ctx.fillStyle = 'rgba(251, 191, 36, 0.45)';
+        ctx.beginPath();
+        ctx.arc(x, y, radius, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
+    }
+
+    /* Helper: Draw Mascot Zuno */
+    function drawZuno(x, y, scale = 1, isHappy = false, isSleeping = false) {
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.scale(scale, scale);
+
+      // Glowing aura
+      const aura = ctx.createRadialGradient(0, 0, 40, 0, 0, 180);
+      aura.addColorStop(0, isHappy ? 'rgba(251, 191, 36, 0.5)' : isSleeping ? 'rgba(192, 132, 252, 0.3)' : 'rgba(56, 189, 248, 0.4)');
+      aura.addColorStop(1, 'rgba(0, 0, 0, 0)');
+      ctx.fillStyle = aura;
+      ctx.beginPath();
+      ctx.arc(0, 0, 180, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Fox Head Shape
+      ctx.fillStyle = '#f97316'; // Fox Orange
+      ctx.beginPath();
+      ctx.ellipse(0, 10, 100, 85, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Ears
+      ctx.fillStyle = '#ea580c';
+      ctx.beginPath();
+      ctx.moveTo(-75, -40);
+      ctx.lineTo(-95, -140);
+      ctx.lineTo(-20, -75);
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.moveTo(75, -40);
+      ctx.lineTo(95, -140);
+      ctx.lineTo(20, -75);
+      ctx.fill();
+
+      // Ear inners
+      ctx.fillStyle = '#fed7aa';
+      ctx.beginPath();
+      ctx.moveTo(-70, -45);
+      ctx.lineTo(-85, -120);
+      ctx.lineTo(-30, -70);
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.moveTo(70, -45);
+      ctx.lineTo(85, -120);
+      ctx.lineTo(30, -70);
+      ctx.fill();
+
+      // White cheek patches
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.ellipse(-45, 30, 45, 40, -0.2, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.ellipse(45, 30, 45, 40, 0.2, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Nose
+      ctx.fillStyle = '#1e1b4b';
+      ctx.beginPath();
+      ctx.ellipse(0, 40, 16, 12, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Eyes
+      if (isSleeping) {
+        // Sleepy curved lines
+        ctx.strokeStyle = '#1e1b4b';
+        ctx.lineWidth = 6;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.arc(-42, -5, 20, 0.1 * Math.PI, 0.9 * Math.PI, false);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.arc(42, -5, 20, 0.1 * Math.PI, 0.9 * Math.PI, false);
+        ctx.stroke();
+      } else {
+        // Bright awake eyes
+        ctx.fillStyle = '#1e1b4b';
+        ctx.beginPath();
+        ctx.arc(-42, -5, 18, 0, Math.PI * 2);
+        ctx.arc(42, -5, 18, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Eye glints
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(-46, -10, 6, 0, Math.PI * 2);
+        ctx.arc(38, -10, 6, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // Spark Tail
+      ctx.save();
+      const tailAngle = isHappy ? Math.sin(Date.now() * 0.01) * 0.3 : 0.2;
+      ctx.rotate(tailAngle);
+      ctx.fillStyle = '#f59e0b'; // Gold Tail
+      ctx.beginPath();
+      ctx.moveTo(70, 40);
+      ctx.quadraticCurveTo(160, 20, 180, -60);
+      ctx.quadraticCurveTo(140, -100, 100, -30);
+      ctx.closePath();
+      ctx.fill();
+
+      // Tail lightning tip
+      ctx.fillStyle = '#fbbf24';
+      ctx.beginPath();
+      ctx.arc(175, -55, 18, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+
+      ctx.restore();
+    }
+
+    /* Helper: Draw Text with Backdrop */
+    function drawBadge(text, y, color = '#fbbf24', bg = 'rgba(251, 191, 36, 0.18)') {
+      ctx.save();
+      ctx.font = '800 36px "Fredoka", sans-serif';
+      const m = ctx.measureText(text);
+      const padX = 36;
+      const padY = 16;
+      const bW = m.width + padX * 2;
+      const bH = 58;
+
+      ctx.fillStyle = bg;
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 3;
+      roundRect((W - bW) / 2, y - bH / 2, bW, bH, 30);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = color;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(text, W / 2, y);
+      ctx.restore();
+    }
+
+    function drawHeading(text, y, size = 68, color = '#ffffff') {
+      ctx.save();
+      ctx.font = `900 ${size}px "Outfit", sans-serif`;
+      ctx.fillStyle = color;
+      ctx.textAlign = 'center';
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
+      ctx.shadowBlur = 18;
+      ctx.fillText(text, W / 2, y);
+      ctx.restore();
+    }
+
+    function drawSubtext(text, y, size = 38, color = '#c4b5fd') {
+      ctx.save();
+      ctx.font = `600 ${size}px "Outfit", sans-serif`;
+      ctx.fillStyle = color;
+      ctx.textAlign = 'center';
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.6)';
+      ctx.shadowBlur = 10;
+      ctx.fillText(text, W / 2, y);
+      ctx.restore();
+    }
+
+    function roundRect(x, y, w, h, r) {
+      ctx.beginPath();
+      ctx.moveTo(x + r, y);
+      ctx.lineTo(x + w - r, y);
+      ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+      ctx.lineTo(x + w, y + h - r);
+      ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+      ctx.lineTo(x + r, y + h);
+      ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+      ctx.lineTo(x, y + r);
+      ctx.quadraticCurveTo(x, y, x + r, y);
+      ctx.closePath();
+    }
+
+    /* ------------------------------------------------------------- */
+    /*  Scene Directors                                              */
+    /* ------------------------------------------------------------- */
+
+    function renderScene(t) {
+      // 1. SCENE 1 (0:00 - 0:08): The Meltdown & Sensory Whiplash
+      if (t < 8) {
+        drawBadge("⚠️ THE POST-SCREEN MELTDOWN", 340, "#ef4444", "rgba(239, 68, 68, 0.25)");
+
+        drawHeading("Why does screen time", 520, 72, "#ffffff");
+        drawHeading("end in a screaming tantrum?", 610, 70, "#f87171");
+
+        // Cartoon Mock Box in center
+        ctx.save();
+        ctx.fillStyle = '#000000';
+        ctx.strokeStyle = '#ef4444';
+        ctx.lineWidth = 6;
+        roundRect(140, 740, 800, 600, 36);
+        ctx.fill();
+        ctx.stroke();
+
+        // Chaotic flashing symbols
+        const shift = Math.sin(t * 15) * 50;
+        ctx.font = '900 120px "Outfit"';
+        ctx.fillStyle = '#fbbf24';
+        ctx.textAlign = 'center';
+        ctx.fillText("⚡ FLASH! ⚡", 540 + shift, 980);
+
+        ctx.font = '700 48px "Fredoka"';
+        ctx.fillStyle = '#f43f5e';
+        ctx.fillText("40 Dopamine Spikes / min", 540, 1140);
+        ctx.restore();
+
+        drawSubtext("Fast-cut cartoons flood tiny brains with cortisol.", 1480, 42, "#fca5a5");
+        drawSubtext("When the screen locks, their nervous system crashes.", 1550, 36, "#fda4af");
+        return;
+      }
+
+      // 2. SCENE 2 (0:08 - 0:18): The Paradigm Shift & ZunoSpark
+      if (t < 18) {
+        drawBadge("🌙 INTRODUCING LOW-STIMULATION SCREEN TIME", 320, "#38bdf8", "rgba(56, 189, 248, 0.2)");
+
+        drawHeading("What if screen time", 470, 72, "#ffffff");
+        drawHeading("actually built patience?", 560, 72, "#fbbf24");
+
+        // Calming Zuno in Center
+        drawZuno(540, 950, 1.45, false, false);
+
+        drawHeading("ZunoSpark", 1360, 84, "#38bdf8");
+        drawSubtext("Executive-Function Trainer for Ages 3–6", 1450, 42, "#c4b5fd");
+        drawSubtext("Deep twilight sky • Acoustic marimba • Zero ads", 1530, 36, "#a78bfa");
+        return;
+      }
+
+      // 3. SCENE 3 (0:18 - 0:32): Spot 1: Wait-Power (Impulse Control)
+      if (t < 32) {
+        drawBadge("SPOT 1: WAIT-POWER & IMPULSE CONTROL", 320, "#fbbf24", "rgba(251, 191, 36, 0.2)");
+        drawHeading("Resist the urge to tap early.", 460, 64, "#ffffff");
+
+        const subT = t - 18;
+        const isAwake = subT >= 6; // Wakes up after 6 seconds
+
+        // Bush & Zuno
+        ctx.save();
+        ctx.fillStyle = '#064e3b';
+        ctx.beginPath();
+        ctx.arc(540, 1100, 320, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+
+        drawZuno(540, 880, 1.35, isAwake, !isAwake);
+
+        // Visual Instruction Pill
+        if (!isAwake) {
+          drawBadge("🤫 PAUSE! Zuno is sleeping... Hands OFF!", 1280, "#c084fc", "rgba(192, 132, 252, 0.25)");
+          drawSubtext("Waiting earns golden Wait-Power sparks.", 1380, 40, "#ddd6fe");
+        } else {
+          drawBadge("👆 POP! Zuno is awake! TAP NOW!", 1280, "#38bdf8", "rgba(56, 189, 248, 0.3)");
+          drawSubtext("+10 Sparks! Patience Superpower Grown! ⚡", 1380, 42, "#fbbf24");
+        }
+
+        drawSubtext("Translates to fewer grocery store meltdowns.", 1560, 36, "#93c5fd");
+        return;
+      }
+
+      // 4. SCENE 4 (0:32 - 0:44): Spot 2: Thunder Chimes (Working Memory)
+      if (t < 44) {
+        drawBadge("SPOT 2: WORKING MEMORY & AUDITORY ATTENTION", 320, "#c084fc", "rgba(192, 132, 252, 0.2)");
+        drawHeading("Listen, remember, and echo.", 460, 64, "#ffffff");
+
+        // Crystal Bells Display
+        const bellY = 880;
+        const subT = t - 32;
+
+        // 3 Crystal Bell Orbs
+        for (let i = 0; i < 3; i++) {
+          const bX = 300 + (i * 240);
+          const isGlowing = (subT > 2 && subT < 4 && i === 0) || (subT > 4 && subT < 6 && i === 1);
+          ctx.save();
+          ctx.fillStyle = isGlowing ? '#fbbf24' : 'rgba(255, 255, 255, 0.08)';
+          ctx.strokeStyle = isGlowing ? '#f59e0b' : 'rgba(255, 255, 255, 0.3)';
+          ctx.lineWidth = isGlowing ? 8 : 4;
+          ctx.shadowColor = isGlowing ? '#fbbf24' : 'transparent';
+          ctx.shadowBlur = isGlowing ? 40 : 0;
+          ctx.beginPath();
+          ctx.arc(bX, bellY, 80, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.stroke();
+
+          ctx.font = '800 48px "Fredoka"';
+          ctx.fillStyle = isGlowing ? '#0c0822' : '#ffffff';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(i === 0 ? "🔔 1" : i === 1 ? "🔔 2" : "🔔 3", bX, bellY);
+          ctx.restore();
+        }
+
+        drawBadge("🎵 Echo Zuno’s 2-Note Crystal Song", 1260, "#38bdf8", "rgba(56, 189, 248, 0.2)");
+        drawSubtext("Trains kids to hold auditory multi-step instructions", 1420, 40, "#ede9fe");
+        drawSubtext("so parents don’t have to repeat themselves 5 times.", 1490, 36, "#c4b5fd");
+        return;
+      }
+
+      // 5. SCENE 5 (0:44 - 0:54): The Gentle Transition (No Meltdowns!)
+      if (t < 54) {
+        drawBadge("ZERO-MELTDOWN TRANSITIONS", 320, "#fbbf24", "rgba(251, 191, 36, 0.25)");
+
+        drawHeading("Zuno’s Tail is Fully Charged!", 470, 68, "#fbbf24");
+        drawSubtext("Session complete with real celebratory milestone.", 560, 38, "#e0e7ff");
+
+        // Happy Zuno leaping
+        drawZuno(540, 920, 1.45, true, false);
+
+        // Score Card Mockup
+        ctx.save();
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.08)';
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+        ctx.lineWidth = 3;
+        roundRect(180, 1180, 720, 220, 28);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.font = '800 52px "Fredoka"';
+        ctx.fillStyle = '#fbbf24';
+        ctx.textAlign = 'center';
+        ctx.fillText("⭐⭐⭐ 3 STARS", 540, 1260);
+
+        ctx.font = '700 36px "Outfit"';
+        ctx.fillStyle = '#38bdf8';
+        ctx.fillText("Wait-Power: 92% • Sparks: +30", 540, 1340);
+        ctx.restore();
+
+        drawBadge("🌳 \"Great focus today! Ready to go play outside?\"", 1500, "#34d399", "rgba(52, 211, 153, 0.2)");
+        drawSubtext("No infinite autoplay. Natural, tear-free hand-off.", 1600, 36, "#a7f3d0");
+        return;
+      }
+
+      // 6. SCENE 6 (0:54 - 1:00): Parent ROI & Call to Action
+      drawBadge("CALM FOCUS FOR THEM • PEACE OF MIND FOR YOU", 300, "#38bdf8", "rgba(56, 189, 248, 0.2)");
+
+      drawHeading("Give your child", 450, 74, "#ffffff");
+      drawHeading("calmer screen time.", 540, 76, "#fbbf24");
+
+      drawZuno(540, 870, 1.35, true, false);
+
+      // Feature Checkmarks
+      const features = [
+        "✓ 100% Ad-Free & Private",
+        "✓ Spot 1 Free in All 3 Worlds",
+        "✓ Works Completely Offline"
+      ];
+      features.forEach((feat, i) => {
+        ctx.font = '700 42px "Outfit"';
+        ctx.fillStyle = '#ffffff';
+        ctx.textAlign = 'center';
+        ctx.fillText(feat, 540, 1190 + (i * 68));
+      });
+
+      // Big CTA Pill
+      ctx.save();
+      const ctaGrad = ctx.createLinearGradient(160, 1420, 920, 1540);
+      ctaGrad.addColorStop(0, '#0284c7');
+      ctaGrad.addColorStop(1, '#38bdf8');
+      ctx.fillStyle = ctaGrad;
+      roundRect(180, 1430, 720, 120, 60);
+      ctx.fill();
+
+      ctx.font = '900 46px "Fredoka"';
+      ctx.fillStyle = '#0c0822';
+      ctx.textAlign = 'center';
+      ctx.fillText("Play Free on Web & Google Play", 540, 1505);
+      ctx.restore();
+
+      drawSubtext("https://jorgekean.github.io/zunospark", 1630, 34, "#fbbf24");
+    }
+
+    /* ------------------------------------------------------------- */
+    /*  Animation Loop & Time Synchronization                       */
+    /* ------------------------------------------------------------- */
+
+    function getSceneName(t) {
+      if (t < 8) return "Scene 1: The Screen Meltdown (0:00 - 0:08)";
+      if (t < 18) return "Scene 2: The Low-Stimulation Shift (0:08 - 0:18)";
+      if (t < 32) return "Scene 3: Spot 1 - Wait-Power (0:18 - 0:32)";
+      if (t < 44) return "Scene 4: Spot 2 - Thunder Chimes (0:32 - 0:44)";
+      if (t < 54) return "Scene 5: The Gentle Hand-Off (0:44 - 0:54)";
+      return "Scene 6: Call To Action & Links (0:54 - 1:00)";
+    }
+
+    function formatTime(s) {
+      const mins = Math.floor(s / 60);
+      const secs = Math.floor(s % 60);
+      return `${mins < 10 ? '0' : ''}${mins}:${secs < 10 ? '0' : ''}${secs}`;
+    }
+
+    function tick(timestamp) {
+      if (!lastTimestamp) lastTimestamp = timestamp;
+      const delta = (timestamp - lastTimestamp) / 1000;
+      lastTimestamp = timestamp;
+
+      if (isPlaying) {
+        currentTime += delta;
+        if (currentTime >= TOTAL_DURATION) {
+          currentTime = TOTAL_DURATION;
+          isPlaying = false;
+          updatePlayButton();
+        }
+        checkSoundTriggers(currentTime);
+      }
+
+      // Draw frame
+      drawBackground(currentTime);
+      renderScene(currentTime);
+
+      // Update UI
+      document.getElementById('timeDisplay').innerText = `${formatTime(currentTime)} / ${formatTime(TOTAL_DURATION)}`;
+      document.getElementById('sceneLabel').innerText = getSceneName(currentTime);
+      document.getElementById('progressFill').style.width = `${(currentTime / TOTAL_DURATION) * 100}%`;
+
+      requestAnimationFrame(tick);
+    }
+
+    /* ------------------------------------------------------------- */
+    /*  User Interaction & Controls                                  */
+    /* ------------------------------------------------------------- */
+
+    const btnPlayPause = document.getElementById('btnPlayPause');
+    const playIcon = document.getElementById('playIcon');
+    const playText = document.getElementById('playText');
+
+    function updatePlayButton() {
+      if (isPlaying) {
+        playIcon.innerText = '⏸';
+        playText.innerText = 'Pause';
+      } else {
+        playIcon.innerText = '▶';
+        playText.innerText = 'Play Video';
+      }
+    }
+
+    btnPlayPause.addEventListener('click', () => {
+      initAudio();
+      if (currentTime >= TOTAL_DURATION) currentTime = 0;
+      isPlaying = !isPlaying;
+      updatePlayButton();
+    });
+
+    document.getElementById('btnReset').addEventListener('click', () => {
+      currentTime = 0;
+      isPlaying = false;
+      updatePlayButton();
+    });
+
+    document.getElementById('btnToggleAudio').addEventListener('click', (e) => {
+      initAudio();
+      soundEnabled = !soundEnabled;
+      e.currentTarget.innerText = soundEnabled ? '🔊 Sound: ON' : '🔇 Sound: OFF';
+    });
+
+    document.getElementById('progressTrack').addEventListener('click', (e) => {
+      const rect = e.currentTarget.getBoundingClientRect();
+      const pos = (e.clientX - rect.left) / rect.width;
+      currentTime = pos * TOTAL_DURATION;
+    });
+
+    window.seekTo = function(sec) {
+      initAudio();
+      currentTime = sec;
+      isPlaying = true;
+      updatePlayButton();
+    };
+
+    /* ------------------------------------------------------------- */
+    /*  MediaRecorder Video Exporter (Direct .webm Download)         */
+    /* ------------------------------------------------------------- */
+
+    function recordVideo(duration) {
+      initAudio();
+      currentTime = 0;
+      isPlaying = true;
+      updatePlayButton();
+
+      const statusBox = document.getElementById('recordingStatus');
+      const statusText = document.getElementById('recordingText');
+      statusBox.style.display = 'flex';
+      statusText.innerText = `Recording ${duration}s mobile video... Keep this tab open!`;
+
+      // Capture 30 FPS stream from canvas
+      const canvasStream = canvas.captureStream(30);
+
+      // Combine video with audio stream if available
+      let combinedStream = canvasStream;
+      if (mediaDest && mediaDest.stream.getAudioTracks().length > 0) {
+        combinedStream = new MediaStream([
+          ...canvasStream.getVideoTracks(),
+          ...mediaDest.stream.getAudioTracks()
+        ]);
+      }
+
+      const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp9,opus')
+        ? 'video/webm;codecs=vp9,opus'
+        : 'video/webm';
+
+      const recorder = new MediaRecorder(combinedStream, {
+        mimeType,
+        videoBitsPerSecond: 6000000 // 6 Mbps high quality
+      });
+
+      const chunks = [];
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) chunks.push(e.data);
+      };
+
+      recorder.onstop = () => {
+        const blob = new Blob(chunks, { type: 'video/webm' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `ZunoSpark_Mobile_9x16_${duration}s.webm`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+
+        statusText.innerText = `🎉 Finished! Downloaded ZunoSpark_Mobile_9x16_${duration}s.webm`;
+        setTimeout(() => {
+          statusBox.style.display = 'none';
+        }, 5000);
+      };
+
+      recorder.start();
+
+      // Automatically stop recorder when duration reached
+      const checkInterval = setInterval(() => {
+        if (currentTime >= duration || !isPlaying) {
+          clearInterval(checkInterval);
+          if (recorder.state === 'recording') recorder.stop();
+        }
+      }, 200);
+    }
+
+    document.getElementById('btnRecord60').addEventListener('click', () => recordVideo(60));
+    document.getElementById('btnRecord30').addEventListener('click', () => recordVideo(30));
+
+    // Support query parameters for pure mobile 9:16 view & auto-play
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('mode') === 'mobile' || urlParams.get('view') === 'mobile' || urlParams.get('mode') === 'fullscreen') {
+      document.body.classList.add('pure-mobile');
+    }
+    if (urlParams.get('autoplay') === '1' || urlParams.get('play') === '1') {
+      initAudio();
+      isPlaying = true;
+      updatePlayButton();
+    }
+    // Also allow clicking canvas directly to play/pause
+    canvas.addEventListener('click', () => {
+      initAudio();
+      if (currentTime >= TOTAL_DURATION) currentTime = 0;
+      isPlaying = !isPlaying;
+      updatePlayButton();
+    });
+
+    // Start rendering immediately
+    requestAnimationFrame(tick);
+  </script>
+</body>
+</html>
