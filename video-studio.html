@@ -375,7 +375,7 @@
         </p>
         <div class="btn-row">
           <button id="btnRecord60" class="btn-gold">
-            ⏺ Record & Download (60s)
+            ⏺ Record & Download (Full 67s)
           </button>
           <button id="btnRecord30" class="btn-ghost">
             ⚡ Quick 30s Short
@@ -393,27 +393,27 @@
         <div class="scene-grid" style="margin-top: 8px;">
           <button class="scene-btn" onclick="seekTo(0)">
             <span class="title">0:00 - The Meltdown</span>
-            <span>Hyper-dopamine crash</span>
+            <span>Overstimulation & Crash</span>
           </button>
-          <button class="scene-btn" onclick="seekTo(8)">
-            <span class="title">0:08 - The Science</span>
-            <span>Sensory whiplash vs Calm</span>
+          <button class="scene-btn" onclick="seekTo(11)">
+            <span class="title">0:11 - Low-Stim Shift</span>
+            <span>ZunoSpark & OT Principles</span>
           </button>
-          <button class="scene-btn" onclick="seekTo(18)">
-            <span class="title">0:18 - Wait-Power</span>
-            <span>Spot 1: Impulse control</span>
+          <button class="scene-btn" onclick="seekTo(22)">
+            <span class="title">0:22 - Spot 1: Wait-Power</span>
+            <span>Impulse Control & Gold Spark</span>
           </button>
-          <button class="scene-btn" onclick="seekTo(32)">
-            <span class="title">0:32 - Thunder Chimes</span>
-            <span>Spot 2: Auditory memory</span>
+          <button class="scene-btn" onclick="seekTo(37)">
+            <span class="title">0:37 - Thunder Chimes</span>
+            <span>Auditory Memory & Directions</span>
           </button>
-          <button class="scene-btn" onclick="seekTo(44)">
-            <span class="title">0:44 - Calm Transition</span>
-            <span>Zuno's Charged Tail</span>
+          <button class="scene-btn" onclick="seekTo(49)">
+            <span class="title">0:49 - Gentle Hand-Off</span>
+            <span>Charged Tail & Outside Play</span>
           </button>
-          <button class="scene-btn" onclick="seekTo(54)">
-            <span class="title">0:54 - Call to Action</span>
-            <span>Parent ROI & Store link</span>
+          <button class="scene-btn" onclick="seekTo(59)">
+            <span class="title">0:59 - Parent ROI & CTA</span>
+            <span>Behavioral Milestones & App Link</span>
           </button>
         </div>
       </div>
@@ -438,7 +438,7 @@
 
     let isPlaying = false;
     let currentTime = 0;
-    const TOTAL_DURATION = 60; // 60 seconds
+    const TOTAL_DURATION = 67; // 67 seconds
     let lastTimestamp = null;
     let soundEnabled = true;
 
@@ -505,44 +505,44 @@
       {
         id: 0,
         startSec: 0.5,
-        endSec: 8.0,
-        file: BASE_VOICE_URL + 'audio/voiceover/scene1_screentrap.wav',
-        text: "Ever notice why standard screen time always triggers a meltdown the second you say 'all done'? Rapid flashing videos hijack young attention spans, leading straight to dopamine crashes."
+        endSec: 11.0,
+        file: BASE_VOICE_URL + 'audio/voiceover/scene1_screentrap.mp3',
+        text: "Ever notice how ordinary screen time always ends in meltdowns? Rapid flashing videos flood young brains with dopamine, leaving them in sensory overload the second you say 'all done'."
       },
       {
         id: 1,
-        startSec: 8.5,
-        endSec: 18.0,
-        file: BASE_VOICE_URL + 'audio/voiceover/scene2_intro.wav',
-        text: "Meet ZunoSpark. A calm, low-stimulation executive function gym designed by pediatric occupational therapy principles."
+        startSec: 11.2,
+        endSec: 22.0,
+        file: BASE_VOICE_URL + 'audio/voiceover/scene2_intro.mp3',
+        text: "That's why we created ZunoSpark. A calm, low-stimulation executive function gym built with pediatric occupational therapy principles. Zero ads, zero dopamine traps."
       },
       {
         id: 2,
-        startSec: 18.5,
-        endSec: 32.0,
-        file: BASE_VOICE_URL + 'audio/voiceover/scene3_waitpower.wav',
-        text: "In Spot One, Wait-Power, kids build impulse control. They practice waiting patiently while Zuno sleeps, and tap only when his spark glows golden. No penalties. No flashing lights."
+        startSec: 22.2,
+        endSec: 37.0,
+        file: BASE_VOICE_URL + 'audio/voiceover/scene3_waitpower.mp3',
+        text: "In Spot One, Wait-Power, children learn impulse control. They watch Zuno sleep, practicing the superpower of waiting, and tap only when his spark turns gold. Fewer grocery store meltdowns, more real-world patience."
       },
       {
         id: 3,
-        startSec: 32.5,
-        endSec: 44.0,
-        file: BASE_VOICE_URL + 'audio/voiceover/scene4_chimes.wav',
-        text: "In Thunder Chimes, gentle marimba notes train auditory working memory and two-part instruction following."
+        startSec: 37.2,
+        endSec: 48.5,
+        file: BASE_VOICE_URL + 'audio/voiceover/scene4_chimes.mp3',
+        text: "In Thunder Chimes, children listen to gentle marimba melodies and repeat the pattern. Strengthening auditory working memory, so you don't have to repeat directions five times."
       },
       {
         id: 4,
-        startSec: 44.5,
-        endSec: 54.0,
-        file: BASE_VOICE_URL + 'audio/voiceover/scene5_transition.wav',
-        text: "And when micro-sessions end, there are zero lockout tears. Zuno's tail charges up, naturally inspiring your child to take their spark outside into the real world."
+        startSec: 48.8,
+        endSec: 58.5,
+        file: BASE_VOICE_URL + 'audio/voiceover/scene5_transition.mp3',
+        text: "And when the session finishes, there are zero lockout meltdowns. Zuno's tail is fully charged, and he gently inspires your child to transition off the screen and play outside."
       },
       {
         id: 5,
-        startSec: 54.2,
-        endSec: 60.0,
-        file: BASE_VOICE_URL + 'audio/voiceover/scene6_roi_cta.wav',
-        text: "Real waiting patience. Zero tantrums. Try ZunoSpark free on web, iOS, and Android today."
+        startSec: 58.8,
+        endSec: 67.0,
+        file: BASE_VOICE_URL + 'audio/voiceover/scene6_roi_cta.mp3',
+        text: "Real behavioral milestones for you. Calm, focused growth for them. Try ZunoSpark free on web and Google Play today."
       }
     ];
 
@@ -630,24 +630,25 @@
         lastSoundSecond = curSec;
 
         if (curSec === 1) playBuzzer();
-        if (curSec === 9) playMarimba(523.25); // C5
-        if (curSec === 10) playMarimba(659.25); // E5
-        if (curSec === 22) playMarimba(440); // A4
-        if (curSec === 26) {
-          // Pop win
+        if (curSec === 11) playMarimba(523.25); // C5 (Calm Shift Entry)
+        if (curSec === 12) playMarimba(659.25); // E5
+        if (curSec === 23) playMarimba(440); // A4 (Spot 1 Calm Sleep)
+        if (curSec === 30) {
+          // Gold spark tap pop
           playMarimba(523.25, 0);
           playMarimba(659.25, 0.1);
           playMarimba(783.99, 0.2);
           playMarimba(1046.5, 0.3);
         }
-        if (curSec === 34) playMarimba(659.25); // Chime 1
-        if (curSec === 36) playMarimba(783.99); // Chime 2
-        if (curSec === 39) {
+        if (curSec === 38) playMarimba(659.25); // Chime 1 Ring
+        if (curSec === 40) playMarimba(783.99); // Chime 2 Ring
+        if (curSec === 42) {
+          // Echo repetition
           playMarimba(659.25, 0);
           playMarimba(783.99, 0.15);
         }
-        if (curSec === 46) playHarpChord(); // Victory chord
-        if (curSec === 55) {
+        if (curSec === 49) playHarpChord(); // Charged Tail Victory Chord
+        if (curSec === 59) {
           playMarimba(523.25, 0);
           playMarimba(783.99, 0.12);
         }
@@ -892,111 +893,339 @@
     }
 
     /* ------------------------------------------------------------- */
-    /*  Scene Directors                                              */
+    /* ------------------------------------------------------------- */
+    /*  Cinematic Scene Director & Transition Engine                 */
     /* ------------------------------------------------------------- */
 
+    function beginScene(t, start, end) {
+      ctx.save();
+      const dur = end - start;
+      const localT = t - start;
+      let alpha = 1;
+      let scale = 1;
+      let transY = 0;
+
+      // Smooth 0.6s ease-in
+      if (localT < 0.6) {
+        const p = localT / 0.6;
+        // Cubic smoothstep
+        const ease = p * p * (3 - 2 * p);
+        alpha = ease;
+        scale = 0.94 + (0.06 * ease);
+        transY = (1 - ease) * 35;
+      }
+      // Smooth 0.6s ease-out
+      else if (localT > dur - 0.6) {
+        const p = (dur - localT) / 0.6;
+        const ease = p * p * (3 - 2 * p);
+        alpha = ease;
+        scale = 1 - (0.04 * (1 - ease));
+        transY = -(1 - ease) * 35;
+      }
+
+      ctx.globalAlpha = Math.max(0, Math.min(1, alpha));
+      ctx.translate(W / 2, H / 2 + transY);
+      ctx.scale(scale, scale);
+      ctx.translate(-W / 2, -H / 2);
+    }
+
+    function endScene() {
+      ctx.restore();
+    }
+
+    /* Helper: Draw Animated Touch Cursor */
+    function drawTouchCursor(x, y, isTapping, t) {
+      ctx.save();
+      // Ripple waves if tapping
+      if (isTapping) {
+        for (let r = 1; r <= 3; r++) {
+          const wave = ((t * 4 + r * 0.3) % 1);
+          ctx.strokeStyle = `rgba(251, 191, 36, ${0.8 * (1 - wave)})`;
+          ctx.lineWidth = 4;
+          ctx.beginPath();
+          ctx.arc(x, y, 20 + wave * 90, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+      }
+
+      // Cursor Pointer Icon
+      ctx.translate(x, y);
+      ctx.fillStyle = '#ffffff';
+      ctx.shadowColor = 'rgba(0,0,0,0.5)';
+      ctx.shadowBlur = 14;
+
+      // Hand / Tap circle
+      ctx.beginPath();
+      ctx.arc(0, 0, isTapping ? 22 : 18, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.strokeStyle = '#fbbf24';
+      ctx.lineWidth = 4;
+      ctx.stroke();
+      ctx.restore();
+    }
+
     function renderScene(t) {
-      // 1. SCENE 1 (0:00 - 0:08): The Meltdown & Sensory Whiplash
-      if (t < 8) {
-        drawBadge("⚠️ THE POST-SCREEN MELTDOWN", 340, "#ef4444", "rgba(239, 68, 68, 0.25)");
+      // ==============================================================
+      // 1. SCENE 1 (0:00 - 11.0s): The Screen Meltdown & Dopamine Crash
+      // Audio: "Ever notice how ordinary screen time always ends in meltdowns?
+      // Rapid flashing videos flood young brains with dopamine, leaving them
+      // in sensory overload the second you say 'all done'."
+      // ==============================================================
+      if (t < 11.0) {
+        beginScene(t, 0, 11.0);
+        drawBadge("⚠️ THE SENSORY OVERLOAD TRAP", 340, "#ef4444", "rgba(239, 68, 68, 0.25)");
 
-        drawHeading("Why does screen time", 520, 72, "#ffffff");
-        drawHeading("end in a screaming tantrum?", 610, 70, "#f87171");
+        drawHeading("Why does screen time", 510, 72, "#ffffff");
+        drawHeading("always end in a meltdown?", 600, 70, "#f87171");
 
-        // Cartoon Mock Box in center
+        // Mock phone screen showing chaotic cartoon game
         ctx.save();
-        ctx.fillStyle = '#000000';
-        ctx.strokeStyle = '#ef4444';
-        ctx.lineWidth = 6;
-        roundRect(140, 740, 800, 600, 36);
+        ctx.fillStyle = '#090414';
+        ctx.strokeStyle = t < 5.5 ? '#ef4444' : '#b91c1c';
+        ctx.lineWidth = 8;
+        ctx.shadowColor = 'rgba(239, 68, 68, 0.5)';
+        ctx.shadowBlur = 30;
+        roundRect(160, 720, 760, 640, 36);
         ctx.fill();
         ctx.stroke();
 
-        // Chaotic flashing symbols
-        const shift = Math.sin(t * 15) * 50;
-        ctx.font = '900 120px "Outfit"';
-        ctx.fillStyle = '#fbbf24';
-        ctx.textAlign = 'center';
-        ctx.fillText("⚡ FLASH! ⚡", 540 + shift, 980);
+        if (t < 5.5) {
+          // Rapid flashy chaotic casino cartoon
+          const flash = Math.sin(t * 18) > 0;
+          ctx.fillStyle = flash ? '#fbbf24' : '#ec4899';
+          ctx.font = '900 68px "Fredoka"';
+          ctx.textAlign = 'center';
+          ctx.fillText("🎰 +9,999 COINS!", 540, 880);
 
-        ctx.font = '700 48px "Fredoka"';
-        ctx.fillStyle = '#f43f5e';
-        ctx.fillText("40 Dopamine Spikes / min", 540, 1140);
+          ctx.fillStyle = '#38bdf8';
+          ctx.font = '700 44px "Outfit"';
+          ctx.fillText("TAP! TAP! TAP! BUY NOW!", 540, 960);
+
+          // Fast spinning wheel simulation
+          ctx.save();
+          ctx.translate(540, 1140);
+          ctx.rotate(t * 14);
+          for (let i = 0; i < 8; i++) {
+            ctx.fillStyle = i % 2 === 0 ? '#ef4444' : '#fbbf24';
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.arc(0, 0, 90, (i * Math.PI) / 4, ((i + 1) * Math.PI) / 4);
+            ctx.closePath();
+            ctx.fill();
+          }
+          ctx.restore();
+
+          drawBadge("⚡ 40 DOPAMINE SPIKES / MINUTE", 1270, "#f43f5e", "rgba(244, 63, 94, 0.25)");
+        } else {
+          // SCREEN CUTOFF / TIME UP MELTDOWN
+          ctx.fillStyle = 'rgba(239, 68, 68, 0.2)';
+          roundRect(180, 740, 720, 600, 28);
+          ctx.fill();
+
+          ctx.fillStyle = '#f87171';
+          ctx.font = '900 62px "Fredoka"';
+          ctx.textAlign = 'center';
+          ctx.fillText("🛑 TIME IS UP: 0:00", 540, 890);
+
+          ctx.font = '100px sans-serif';
+          ctx.fillText("😭", 540, 1020);
+
+          ctx.font = '700 40px "Outfit"';
+          ctx.fillStyle = '#ffffff';
+          ctx.fillText("Dopamine Crashes to 0%", 540, 1120);
+
+          // Red crashing progress gauge
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
+          roundRect(240, 1160, 600, 24, 12);
+          ctx.fill();
+
+          ctx.fillStyle = '#ef4444';
+          const crashWidth = Math.max(0, 600 * (1 - (t - 5.5) * 0.7));
+          roundRect(240, 1160, crashWidth, 24, 12);
+          ctx.fill();
+
+          drawBadge("💥 SENSORY CRASH: MELTDOWN TRIGGERED", 1270, "#ef4444", "rgba(239, 68, 68, 0.35)");
+        }
         ctx.restore();
 
-        drawSubtext("Fast-cut cartoons flood tiny brains with cortisol.", 1480, 42, "#fca5a5");
-        drawSubtext("When the screen locks, their nervous system crashes.", 1550, 36, "#fda4af");
+        drawSubtext("Flashing videos overstimulate young nervous systems.", 1480, 38, "#fca5a5");
+        drawSubtext("Leaving toddlers unable to regulate when screen locks.", 1540, 34, "#fda4af");
+        endScene();
         return;
       }
 
-      // 2. SCENE 2 (0:08 - 0:18): The Paradigm Shift & ZunoSpark
-      if (t < 18) {
-        drawBadge("🌙 INTRODUCING LOW-STIMULATION SCREEN TIME", 320, "#38bdf8", "rgba(56, 189, 248, 0.2)");
+      // ==============================================================
+      // 2. SCENE 2 (11.0 - 22.0s): The Calm Shift to ZunoSpark
+      // Audio: "That's why we created ZunoSpark. A calm, low-stimulation
+      // executive function gym built with pediatric occupational therapy
+      // principles. Zero ads, zero dopamine traps."
+      // ==============================================================
+      if (t < 22.0) {
+        beginScene(t, 11.0, 22.0);
+        drawBadge("🌿 INTRODUCING LOW-STIMULATION SCREEN TIME", 320, "#38bdf8", "rgba(56, 189, 248, 0.2)");
 
-        drawHeading("What if screen time", 470, 72, "#ffffff");
-        drawHeading("actually built patience?", 560, 72, "#fbbf24");
+        drawHeading("What if screen time", 460, 72, "#ffffff");
+        drawHeading("actually built focus?", 550, 72, "#fbbf24");
 
-        // Calming Zuno in Center
-        drawZuno(540, 950, 1.45, false, false);
+        // Calming Zuno with breathing animation
+        const breath = Math.sin(t * 3) * 6;
+        drawZuno(540, 910 + breath, 1.4, false, false);
 
-        drawHeading("ZunoSpark", 1360, 84, "#38bdf8");
-        drawSubtext("Executive-Function Trainer for Ages 3–6", 1450, 42, "#c4b5fd");
-        drawSubtext("Deep twilight sky • Acoustic marimba • Zero ads", 1530, 36, "#a78bfa");
+        // 3 Clean Pediatric OT Cards
+        const otCards = [
+          { icon: "🌿", text: "Low-Stimulation Twilight Sky (Zero Flashing)" },
+          { icon: "🚫", text: "100% Ad-Free • Zero In-App Traps" },
+          { icon: "🧠", text: "Built with Pediatric Occupational Therapy" }
+        ];
+
+        otCards.forEach((card, idx) => {
+          const cardY = 1170 + idx * 95;
+          ctx.save();
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.08)';
+          ctx.strokeStyle = 'rgba(56, 189, 248, 0.3)';
+          ctx.lineWidth = 2;
+          roundRect(140, cardY, 800, 78, 22);
+          ctx.fill();
+          ctx.stroke();
+
+          ctx.font = '700 36px "Outfit"';
+          ctx.fillStyle = '#ffffff';
+          ctx.textAlign = 'left';
+          ctx.fillText(`${card.icon}  ${card.text}`, 180, cardY + 50);
+          ctx.restore();
+        });
+
+        drawSubtext("ZunoSpark Executive Function Gym (Ages 3–6)", 1530, 36, "#c4b5fd");
+        endScene();
         return;
       }
 
-      // 3. SCENE 3 (0:18 - 0:32): Spot 1: Wait-Power (Impulse Control)
-      if (t < 32) {
+      // ==============================================================
+      // 3. SCENE 3 (22.0 - 37.0s): Spot 1: Wait-Power (Impulse Control)
+      // Audio: "In Spot One, Wait-Power, children learn impulse control.
+      // They watch Zuno sleep, practicing the superpower of waiting,
+      // and tap only when his spark turns gold. Fewer grocery store meltdowns,
+      // more real-world patience."
+      // ==============================================================
+      if (t < 37.0) {
+        beginScene(t, 22.0, 37.0);
         drawBadge("SPOT 1: WAIT-POWER & IMPULSE CONTROL", 320, "#fbbf24", "rgba(251, 191, 36, 0.2)");
-        drawHeading("Resist the urge to tap early.", 460, 64, "#ffffff");
+        drawHeading("Resist the urge to tap early.", 460, 68, "#ffffff");
 
-        const subT = t - 18;
-        const isAwake = subT >= 6; // Wakes up after 6 seconds
+        const subT = t - 22.0;
+        const isAwake = subT >= 8.0; // Wakes up at t = 30.0s
 
-        // Bush & Zuno
+        // Tree stump & cozy forest foliage
         ctx.save();
         ctx.fillStyle = '#064e3b';
         ctx.beginPath();
-        ctx.arc(540, 1100, 320, 0, Math.PI * 2);
+        ctx.arc(540, 1140, 340, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#78350f'; // Wood stump
+        roundRect(360, 960, 360, 160, 24);
         ctx.fill();
         ctx.restore();
 
-        drawZuno(540, 880, 1.35, isAwake, !isAwake);
+        // Sleeping vs Golden Awake Zuno
+        drawZuno(540, 890, 1.4, isAwake, !isAwake);
 
-        // Visual Instruction Pill
+        // Sleep Zzz bubbles if sleeping
         if (!isAwake) {
-          drawBadge("🤫 PAUSE! Zuno is sleeping... Hands OFF!", 1280, "#c084fc", "rgba(192, 132, 252, 0.25)");
-          drawSubtext("Waiting earns golden Wait-Power sparks.", 1380, 40, "#ddd6fe");
+          ctx.save();
+          ctx.font = '800 48px "Fredoka"';
+          ctx.fillStyle = '#c084fc';
+          const zOffset = Math.sin(t * 4) * 10;
+          ctx.fillText("Z", 680 + zOffset, 800 - (subT * 8) % 60);
+          ctx.fillText("z", 720 + zOffset, 750 - (subT * 8) % 60);
+          ctx.fillText("z", 750 + zOffset, 710 - (subT * 8) % 60);
+          ctx.restore();
+
+          // Live Wait-Power Progress Bar
+          ctx.save();
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+          roundRect(200, 1180, 680, 32, 16);
+          ctx.fill();
+
+          const waitProgress = Math.min(1, subT / 8.0);
+          ctx.fillStyle = '#c084fc';
+          roundRect(200, 1180, 680 * waitProgress, 32, 16);
+          ctx.fill();
+          ctx.restore();
+
+          drawBadge("🤫 PAUSE! Zuno is sleeping... Hold back!", 1280, "#c084fc", "rgba(192, 132, 252, 0.25)");
+          drawSubtext("Children practice pausing before reacting.", 1380, 38, "#ddd6fe");
+
+          // Touch cursor hovering, holding still
+          drawTouchCursor(640, 950, false, t);
         } else {
-          drawBadge("👆 POP! Zuno is awake! TAP NOW!", 1280, "#38bdf8", "rgba(56, 189, 248, 0.3)");
-          drawSubtext("+10 Sparks! Patience Superpower Grown! ⚡", 1380, 42, "#fbbf24");
+          // AWAKE & GOLDEN SPARK EXPLOSION
+          drawBadge("👆 SPARK TURNS GOLD! TAP TO WAKE!", 1280, "#fbbf24", "rgba(251, 191, 36, 0.35)");
+          drawSubtext("🌟 Impulse Control: 100%! +30 Sparks Earned!", 1380, 42, "#fbbf24");
+
+          // Touch cursor tapping with burst ripples
+          drawTouchCursor(540, 890, true, t);
+
+          // Star explosion
+          ctx.save();
+          for (let s = 0; s < 12; s++) {
+            const angle = (s * Math.PI) / 6;
+            const dist = 140 + Math.sin(t * 8 + s) * 50;
+            ctx.fillStyle = '#fbbf24';
+            ctx.font = '40px sans-serif';
+            ctx.fillText("✨", 540 + Math.cos(angle) * dist, 890 + Math.sin(angle) * dist);
+          }
+          ctx.restore();
         }
 
-        drawSubtext("Translates to fewer grocery store meltdowns.", 1560, 36, "#93c5fd");
+        drawSubtext("Translates to fewer grocery store meltdowns & waiting turns.", 1540, 34, "#93c5fd");
+        endScene();
         return;
       }
 
-      // 4. SCENE 4 (0:32 - 0:44): Spot 2: Thunder Chimes (Working Memory)
-      if (t < 44) {
-        drawBadge("SPOT 2: WORKING MEMORY & AUDITORY ATTENTION", 320, "#c084fc", "rgba(192, 132, 252, 0.2)");
-        drawHeading("Listen, remember, and echo.", 460, 64, "#ffffff");
+      // ==============================================================
+      // 4. SCENE 4 (37.0 - 48.5s): Spot 2: Thunder Chimes (Working Memory)
+      // Audio: "In Thunder Chimes, children listen to gentle marimba melodies
+      // and repeat the pattern. Strengthening auditory working memory, so you
+      // don't have to repeat directions five times."
+      // ==============================================================
+      if (t < 48.5) {
+        beginScene(t, 37.0, 48.5);
+        drawBadge("SPOT 2: WORKING MEMORY & DIRECTIONS", 320, "#c084fc", "rgba(192, 132, 252, 0.2)");
+        drawHeading("Listen, remember, and repeat.", 460, 68, "#ffffff");
 
-        // Crystal Bells Display
+        const subT = t - 37.0;
         const bellY = 880;
-        const subT = t - 32;
 
-        // 3 Crystal Bell Orbs
+        // 3 Crystal Bell Orbs with acoustic glow
         for (let i = 0; i < 3; i++) {
-          const bX = 300 + (i * 240);
-          const isGlowing = (subT > 2 && subT < 4 && i === 0) || (subT > 4 && subT < 6 && i === 1);
+          const bX = 280 + (i * 260);
+          const isBell1Active = (subT >= 1.0 && subT < 3.0 && i === 0) || (subT >= 5.0 && subT < 6.5 && i === 0);
+          const isBell2Active = (subT >= 3.0 && subT < 4.8 && i === 1) || (subT >= 6.5 && subT < 8.0 && i === 1);
+          const isGlowing = isBell1Active || isBell2Active;
+
           ctx.save();
           ctx.fillStyle = isGlowing ? '#fbbf24' : 'rgba(255, 255, 255, 0.08)';
           ctx.strokeStyle = isGlowing ? '#f59e0b' : 'rgba(255, 255, 255, 0.3)';
           ctx.lineWidth = isGlowing ? 8 : 4;
           ctx.shadowColor = isGlowing ? '#fbbf24' : 'transparent';
           ctx.shadowBlur = isGlowing ? 40 : 0;
+
+          // Soundwaves expanding from active bells
+          if (isGlowing) {
+            for (let w = 1; w <= 2; w++) {
+              const wave = ((t * 3 + w * 0.4) % 1);
+              ctx.strokeStyle = `rgba(251, 191, 36, ${0.7 * (1 - wave)})`;
+              ctx.lineWidth = 3;
+              ctx.beginPath();
+              ctx.arc(bX, bellY, 80 + wave * 60, 0, Math.PI * 2);
+              ctx.stroke();
+            }
+          }
+
           ctx.beginPath();
-          ctx.arc(bX, bellY, 80, 0, Math.PI * 2);
+          ctx.arc(bX, bellY, 85, 0, Math.PI * 2);
           ctx.fill();
           ctx.stroke();
 
@@ -1008,83 +1237,119 @@
           ctx.restore();
         }
 
-        drawBadge("🎵 Echo Zuno’s 2-Note Crystal Song", 1260, "#38bdf8", "rgba(56, 189, 248, 0.2)");
-        drawSubtext("Trains kids to hold auditory multi-step instructions", 1420, 40, "#ede9fe");
-        drawSubtext("so parents don’t have to repeat themselves 5 times.", 1490, 36, "#c4b5fd");
+        // Animated cursor tapping in sequence during echo phase
+        if (subT >= 5.0 && subT < 6.5) {
+          drawTouchCursor(280, 880, true, t); // Tapping Bell 1
+        } else if (subT >= 6.5 && subT < 8.0) {
+          drawTouchCursor(540, 880, true, t); // Tapping Bell 2
+        }
+
+        drawBadge("🎵 2-Note Acoustic Melodic Memory", 1260, "#38bdf8", "rgba(56, 189, 248, 0.2)");
+        drawSubtext("Trains kids to hold auditory multi-step instructions.", 1420, 38, "#ede9fe");
+        drawSubtext("So parents don’t have to repeat themselves 5 times.", 1480, 34, "#c4b5fd");
+        endScene();
         return;
       }
 
-      // 5. SCENE 5 (0:44 - 0:54): The Gentle Transition (No Meltdowns!)
-      if (t < 54) {
+      // ==============================================================
+      // 5. SCENE 5 (48.5 - 58.5s): The Gentle Transition (No Meltdowns!)
+      // Audio: "And when the session finishes, there are zero lockout
+      // meltdowns. Zuno's tail is fully charged, and he gently inspires
+      // your child to transition off the screen and play outside."
+      // ==============================================================
+      if (t < 58.5) {
+        beginScene(t, 48.5, 58.5);
         drawBadge("ZERO-MELTDOWN TRANSITIONS", 320, "#fbbf24", "rgba(251, 191, 36, 0.25)");
 
-        drawHeading("Zuno’s Tail is Fully Charged!", 470, 68, "#fbbf24");
-        drawSubtext("Session complete with real celebratory milestone.", 560, 38, "#e0e7ff");
+        drawHeading("Zuno’s Tail is Fully Charged!", 460, 70, "#fbbf24");
+        drawSubtext("Session complete with celebratory achievement.", 550, 38, "#e0e7ff");
 
-        // Happy Zuno leaping
-        drawZuno(540, 920, 1.45, true, false);
+        // Happy Zuno leaping with glowing golden tail
+        const leap = Math.sin((t - 48.5) * 4) * 12;
+        drawZuno(540, 890 + leap, 1.45, true, false);
 
-        // Score Card Mockup
+        // Option A Celebration Modal Card
         ctx.save();
         ctx.fillStyle = 'rgba(255, 255, 255, 0.08)';
-        ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+        ctx.strokeStyle = 'rgba(251, 191, 36, 0.4)';
         ctx.lineWidth = 3;
-        roundRect(180, 1180, 720, 220, 28);
+        roundRect(160, 1140, 760, 280, 32);
         ctx.fill();
         ctx.stroke();
 
         ctx.font = '800 52px "Fredoka"';
         ctx.fillStyle = '#fbbf24';
         ctx.textAlign = 'center';
-        ctx.fillText("⭐⭐⭐ 3 STARS", 540, 1260);
+        ctx.fillText("⭐⭐⭐ 3 STARS UNLOCKED", 540, 1220);
 
         ctx.font = '700 36px "Outfit"';
         ctx.fillStyle = '#38bdf8';
-        ctx.fillText("Wait-Power: 92% • Sparks: +30", 540, 1340);
+        ctx.fillText("Wait-Power: 92% • Tail Charge: 100%", 540, 1290);
+
+        // Friendly Hand-Off Button Mockups
+        ctx.fillStyle = '#fbbf24';
+        roundRect(200, 1330, 320, 64, 32);
+        ctx.fill();
+        ctx.font = '800 30px "Fredoka"';
+        ctx.fillStyle = '#0c0822';
+        ctx.fillText("🌳 Go Play Outside", 360, 1372);
+
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
+        roundRect(560, 1330, 320, 64, 32);
+        ctx.fill();
+        ctx.fillStyle = '#ffffff';
+        ctx.fillText("🗺️ Forest Map", 720, 1372);
         ctx.restore();
 
-        drawBadge("🌳 \"Great focus today! Ready to go play outside?\"", 1500, "#34d399", "rgba(52, 211, 153, 0.2)");
-        drawSubtext("No infinite autoplay. Natural, tear-free hand-off.", 1600, 36, "#a7f3d0");
+        drawSubtext("Zero lockout walls. Gentle, guilt-free hand-off.", 1520, 36, "#a7f3d0");
+        endScene();
         return;
       }
 
-      // 6. SCENE 6 (0:54 - 1:00): Parent ROI & Call to Action
+      // ==============================================================
+      // 6. SCENE 6 (58.5 - 67.0s): Parent ROI & Call to Action
+      // Audio: "Real behavioral milestones for you. Calm, focused growth
+      // for them. Try ZunoSpark free on web and Google Play today."
+      // ==============================================================
+      beginScene(t, 58.5, 67.0);
       drawBadge("CALM FOCUS FOR THEM • PEACE OF MIND FOR YOU", 300, "#38bdf8", "rgba(56, 189, 248, 0.2)");
 
-      drawHeading("Give your child", 450, 74, "#ffffff");
-      drawHeading("calmer screen time.", 540, 76, "#fbbf24");
+      drawHeading("Give your child", 440, 74, "#ffffff");
+      drawHeading("calmer screen time.", 530, 76, "#fbbf24");
 
-      drawZuno(540, 870, 1.35, true, false);
+      drawZuno(540, 840, 1.35, true, false);
 
-      // Feature Checkmarks
-      const features = [
-        "✓ 100% Ad-Free & Private",
-        "✓ Spot 1 Free in All 3 Worlds",
-        "✓ Works Completely Offline"
+      // Parent ROI Behavioral Milestones
+      const milestones = [
+        "✓ Patience & Waiting Power: 92% (+38%)",
+        "✓ Emotional Reset Latency: Calm & Resilient",
+        "✓ 100% Ad-Free • Zero Autoplay Locks"
       ];
-      features.forEach((feat, i) => {
-        ctx.font = '700 42px "Outfit"';
+      milestones.forEach((m, idx) => {
+        ctx.font = '700 40px "Outfit"';
         ctx.fillStyle = '#ffffff';
         ctx.textAlign = 'center';
-        ctx.fillText(feat, 540, 1190 + (i * 68));
+        ctx.fillText(m, 540, 1160 + (idx * 68));
       });
 
       // Big CTA Pill
       ctx.save();
-      const ctaGrad = ctx.createLinearGradient(160, 1420, 920, 1540);
+      const ctaGrad = ctx.createLinearGradient(160, 1400, 920, 1520);
       ctaGrad.addColorStop(0, '#0284c7');
       ctaGrad.addColorStop(1, '#38bdf8');
       ctx.fillStyle = ctaGrad;
-      roundRect(180, 1430, 720, 120, 60);
+      roundRect(180, 1400, 720, 120, 60);
       ctx.fill();
 
       ctx.font = '900 46px "Fredoka"';
       ctx.fillStyle = '#0c0822';
       ctx.textAlign = 'center';
-      ctx.fillText("Play Free on Web & Google Play", 540, 1505);
+      ctx.fillText("Play Free on Web & Google Play", 540, 1475);
       ctx.restore();
 
-      drawSubtext("https://jorgekean.github.io/zunospark", 1630, 34, "#fbbf24");
+      drawSubtext("https://jorgekean.github.io/zunospark", 1580, 34, "#fbbf24");
+      drawSubtext("Android • iOS • Web PWA", 1640, 30, "#c4b5fd");
+      endScene();
     }
 
     /* ------------------------------------------------------------- */
@@ -1092,12 +1357,12 @@
     /* ------------------------------------------------------------- */
 
     function getSceneName(t) {
-      if (t < 8) return "Scene 1: The Screen Meltdown (0:00 - 0:08)";
-      if (t < 18) return "Scene 2: The Low-Stimulation Shift (0:08 - 0:18)";
-      if (t < 32) return "Scene 3: Spot 1 - Wait-Power (0:18 - 0:32)";
-      if (t < 44) return "Scene 4: Spot 2 - Thunder Chimes (0:32 - 0:44)";
-      if (t < 54) return "Scene 5: The Gentle Hand-Off (0:44 - 0:54)";
-      return "Scene 6: Call To Action & Links (0:54 - 1:00)";
+      if (t < 11.0) return "Scene 1: The Screen Meltdown (0:00 - 0:11)";
+      if (t < 22.0) return "Scene 2: The Low-Stimulation Shift (0:11 - 0:22)";
+      if (t < 37.0) return "Scene 3: Spot 1 - Wait-Power (0:22 - 0:37)";
+      if (t < 48.5) return "Scene 4: Spot 2 - Thunder Chimes (0:37 - 0:49)";
+      if (t < 58.5) return "Scene 5: The Gentle Hand-Off (0:49 - 0:59)";
+      return "Scene 6: Call To Action & Links (0:59 - 1:07)";
     }
 
     function formatTime(s) {
@@ -1143,59 +1408,55 @@
       if (!cue) return;
 
       ctx.save();
-      const padX = 60;
+      const padX = 50;
       const subW = W - (padX * 2);
-      const subY = 1700;
-      const subH = 140;
+      const subY = 1680;
+      const subH = 160;
 
-      // Dark translucent pill with golden border
-      ctx.fillStyle = 'rgba(10, 6, 29, 0.9)';
-      ctx.strokeStyle = 'rgba(251, 191, 36, 0.45)';
+      // Dark translucent glassmorphic pill with golden border
+      ctx.fillStyle = 'rgba(10, 6, 29, 0.92)';
+      ctx.strokeStyle = 'rgba(251, 191, 36, 0.55)';
       ctx.lineWidth = 3;
-      ctx.shadowColor = 'rgba(0, 0, 0, 0.7)';
-      ctx.shadowBlur = 25;
-      roundRect(padX, subY, subW, subH, 24);
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
+      ctx.shadowBlur = 30;
+      roundRect(padX, subY, subW, subH, 26);
       ctx.fill();
       ctx.stroke();
 
       // Voice status indicator pulse
       ctx.beginPath();
       ctx.fillStyle = voiceEnabled ? '#38bdf8' : '#94a3b8';
-      ctx.arc(padX + 44, subY + 50, 10, 0, Math.PI * 2);
+      ctx.arc(padX + 44, subY + 38, 10, 0, Math.PI * 2);
       ctx.fill();
 
       // Label: Voiceover
       ctx.font = '800 24px "Fredoka"';
       ctx.fillStyle = '#c4b5fd';
       ctx.textAlign = 'left';
-      ctx.fillText("🎙️ VOICE OVER", padX + 66, subY + 58);
+      ctx.fillText("🎙️ NATURAL VOICE OVER (JENNY NEURAL)", padX + 66, subY + 45);
 
-      // Subtitle spoken words (word-wrapped)
+      // Subtitle spoken words (word-wrapped up to 3 lines)
       ctx.font = '700 32px "Outfit"';
-      ctx.fillStyle = '#ffffff';
-
       const maxTextWidth = subW - 80;
       const words = cue.text.split(' ');
-      let line1 = '';
-      let line2 = '';
+      const lines = [];
+      let curLine = '';
       for (const w of words) {
-        if (ctx.measureText(line1 + w + ' ').width < maxTextWidth && !line2) {
-          line1 += w + ' ';
+        if (ctx.measureText(curLine + w + ' ').width < maxTextWidth) {
+          curLine += w + ' ';
         } else {
-          line2 += w + ' ';
+          lines.push(curLine.trim());
+          curLine = w + ' ';
         }
       }
+      if (curLine) lines.push(curLine.trim());
 
-      ctx.textAlign = 'left';
-      if (line2) {
-        ctx.fillStyle = '#ffffff';
-        ctx.fillText(line1.trim(), padX + 40, subY + 95);
-        ctx.fillStyle = '#fde68a';
-        ctx.fillText(line2.trim(), padX + 40, subY + 128);
-      } else {
-        ctx.fillStyle = '#ffffff';
-        ctx.fillText(line1.trim(), padX + 40, subY + 105);
-      }
+      const startTextY = subY + (lines.length === 1 ? 100 : lines.length === 2 ? 88 : 78);
+      const lineStep = 38;
+      lines.forEach((l, idx) => {
+        ctx.fillStyle = idx === 0 ? '#ffffff' : idx === 1 ? '#fde68a' : '#c4b5fd';
+        ctx.fillText(l, padX + 40, startTextY + (idx * lineStep));
+      });
       ctx.restore();
     }
 
@@ -1353,7 +1614,7 @@
       }, 200);
     }
 
-    document.getElementById('btnRecord60').addEventListener('click', () => recordVideo(60));
+    document.getElementById('btnRecord60').addEventListener('click', () => recordVideo(67));
     document.getElementById('btnRecord30').addEventListener('click', () => recordVideo(30));
 
     // Support query parameters for pure mobile 9:16 view & auto-play
