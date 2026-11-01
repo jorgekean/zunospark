@@ -76,22 +76,40 @@ ZunoSpark is a gentle, science-inspired executive-function trainer created speci
 
 ---
 
-## 💰 In-App Products Setup (Google Play Console)
+## 💰 In-App Products & Subscriptions Setup (Google Play Console)
 
-ZunoSpark uses a **freemium one-time purchase** model with **zero ads** and **zero subscriptions**:
+ZunoSpark uses a **freemium family model** with **zero ads**:
 - **Spot 1 (Level 1)** in all 3 adventure clearings is **100% free forever**.
-- **Spots 2 through 5 (Levels 2–5)** are unlocked across the entire game via a single **$19.00 USD one-time purchase** ("Full Adventure Pass").
+- **Spots 2 through 5 (Levels 2–5)** are unlocked across the entire game via flexible family options:
+  1. **Monthly Subscription**: `$4.99 USD / month` (flexible family plan, cancel anytime)
+  2. **Yearly Subscription**: `$29.99 USD / year` (~$2.50/mo — Best Value, 50% discount)
+  3. **Early Lifetime Pass**: `$49.99 USD one-time` (early bird non-consumable pass, pay once, keep forever)
 
-### Setting up the Product in Play Console:
-1. In Google Play Console, navigate to **Monetize with Play** > **Products** > **In-app products**.
+### Setting up the Products in Play Console:
+
+#### A. Recurring Subscriptions:
+1. In Google Play Console, navigate to **Monetize with Play** > **Products** > **Subscriptions**.
+2. Click **Create subscription**.
+3. Create the **Monthly Plan**:
+   - **Product ID**: `zunospark_pass_monthly_499` *(must match exactly)*
+   - **Name**: `ZunoSpark Monthly Adventure Pass`
+   - **Base Plan**: Auto-renewing, Billing period: **1 month**
+   - **Price**: `$4.99 USD` (activate base plan)
+4. Create the **Yearly Plan** (Best Value):
+   - **Product ID**: `zunospark_pass_yearly_2999` *(must match exactly)*
+   - **Name**: `ZunoSpark Yearly Adventure Pass`
+   - **Base Plan**: Auto-renewing, Billing period: **1 year**
+   - **Price**: `$29.99 USD` (activate base plan)
+
+#### B. Early Lifetime One-Time Pass:
+1. Navigate to **Monetize with Play** > **Products** > **In-app products**.
 2. Click **Create product**.
-3. Fill in the product configuration:
-   - **Product ID**: `zunospark_full_adventure_19` *(must match exactly)*
-   - **Product Name**: `ZunoSpark Full Adventure Pass`
-   - **Description**: `One-time unlock for Spots 2 through 5 across all clearings. Lifetime family access, zero ads, zero recurring subscriptions.`
-   - **Default Price**: `$19.00 USD` (or equivalent in local currencies)
-   - **Status**: Set to **Active**
-4. Click **Save** and then **Activate**.
+   - **Product ID**: `zunospark_pass_lifetime_4999` *(must match exactly)*
+   - **Product Name**: `ZunoSpark Early Lifetime Pass`
+   - **Description**: `One-time unlock for Spots 2 through 5 across all clearings. Lifetime family access, zero ads, zero recurring fees.`
+   - **Default Price**: `$49.99 USD`
+   - **Status**: Set to **Active** and **Save**.
+*(Note: Legacy SKU `zunospark_full_adventure_19` is also supported automatically for purchase restores).*
 
 ### 🛡 Parental Gate Compliance (Google Play Families Policy)
 Under Google Play's Families Policy (target audience ages 3–6), **all in-app purchase triggers must be protected by an effective Parental Gate**.

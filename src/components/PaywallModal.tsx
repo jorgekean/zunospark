@@ -12,7 +12,7 @@ import {
 } from 'lucide-react';
 import ZunoMascot from './ZunoMascot';
 import { useZunoStore } from '../store/useZunoStore';
-import { iapService } from '../services/iapService';
+import { DEFAULT_PLANS, iapService, type PlanDetails, type PlanId } from '../services/iapService';
 import { zunoAudio } from '../audio/ZunoSynth';
 import { triggerHaptic } from '../services/capacitorBridge';
 
@@ -28,7 +28,8 @@ export default function PaywallModal() {
   const isFullAdventureUnlocked = useZunoStore((s) => s.isFullAdventureUnlocked);
   const setFullAdventureUnlocked = useZunoStore((s) => s.setFullAdventureUnlocked);
 
-  const [price, setPrice] = useState('$19.00');
+  const [selectedPlan, setSelectedPlan] = useState<PlanId>('yearly');
+  const [plans, setPlans] = useState<Record<PlanId, PlanDetails>>(DEFAULT_PLANS);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
@@ -40,8 +41,8 @@ export default function PaywallModal() {
 
   useEffect(() => {
     if (showPaywallModal) {
-      iapService.getProductDetails().then((details) => {
-        if (details.price) setPrice(details.price);
+      iapService.getPlans().then((fetched) => {
+        if (fetched) setPlans(fetched);
       });
     }
   }, [showPaywallModal]);
@@ -51,7 +52,6 @@ export default function PaywallModal() {
   const handleStartPurchase = () => {
     zunoAudio.playTap();
     triggerHaptic('medium');
-    // Open parental gate arithmetic challenge
     setQuestion(newQuestion());
     setAnswer('');
     setGateWrong(false);
@@ -64,7 +64,7 @@ export default function PaywallModal() {
     setMessage(null);
 
     try {
-      const res = await iapService.purchaseFullAdventure();
+      const res = await iapService.purchasePlan(selectedPlan);
       if (res.success) {
         zunoAudio.playTrailCheer();
         triggerHaptic('success');
@@ -126,15 +126,16 @@ export default function PaywallModal() {
   };
 
   const isNative = iapService.isNative();
+  const activePlan = plans[selectedPlan] ?? plans.yearly;
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-zuno-night/85 p-4 backdrop-blur-md"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-zuno-night/85 p-3 backdrop-blur-md md:p-4"
       role="dialog"
       aria-modal="true"
       aria-label="Unlock Full Adventure"
     >
-      <div className="glass-card animate-pop-in relative flex max-h-[92vh] w-full max-w-lg flex-col overflow-y-auto rounded-3xl border border-white/20 bg-gradient-to-b from-zuno-night/95 to-[#1a0f3d]/95 p-6 text-center shadow-2xl md:p-8">
+      <div className="glass-card animate-pop-in relative flex max-h-[94vh] w-full max-w-xl flex-col overflow-y-auto rounded-3xl border border-white/20 bg-gradient-to-b from-zuno-night/95 via-[#1a0f3d]/95 to-zuno-night/95 p-5 text-center shadow-2xl md:p-7">
         {/* Close Button */}
         <button
           type="button"
@@ -143,107 +144,201 @@ export default function PaywallModal() {
             closePaywall();
           }}
           aria-label="Close"
-          className="zuno-btn-ghost absolute right-4 top-4 h-11 w-11 rounded-full p-2 text-zuno-lavender/70 hover:text-white"
+          className="zuno-btn-ghost absolute right-3 top-3 h-11 w-11 rounded-full p-2 text-zuno-lavender/70 hover:text-white md:right-4 md:top-4"
         >
           <X className="h-6 w-6" />
         </button>
 
         {/* Mascot Header */}
-        <div className="relative mx-auto -mt-2 mb-2 flex items-center justify-center">
+        <div className="relative mx-auto -mt-1 mb-1.5 flex items-center justify-center">
           <div className="absolute -inset-4 rounded-full bg-gradient-to-r from-zuno-cyan/20 to-zuno-gold/20 blur-xl" />
           <div className="animate-float">
-            <ZunoMascot mood="AWAKE_POP" size={130} />
+            <ZunoMascot mood="AWAKE_POP" size={110} />
           </div>
-          <div className="absolute -right-2 top-0 flex h-9 w-9 items-center justify-center rounded-full bg-zuno-gold text-zuno-night shadow-glow-gold">
-            <Crown className="h-5 w-5 fill-current" />
+          <div className="absolute -right-2 top-0 flex h-8 w-8 items-center justify-center rounded-full bg-zuno-gold text-zuno-night shadow-glow-gold">
+            <Crown className="h-4 w-4 fill-current" />
           </div>
         </div>
 
         {/* Tagline */}
-        <div className="inline-flex items-center gap-1.5 self-center rounded-full border border-zuno-gold/30 bg-zuno-gold/15 px-3 py-1 text-xs font-bold text-zuno-gold">
-          <Sparkles className="h-3.5 w-3.5" /> ONE-TIME PAYMENT • NO SUBSCRIPTIONS
+        <div className="inline-flex items-center gap-1.5 self-center rounded-full border border-zuno-gold/30 bg-zuno-gold/15 px-3 py-0.5 text-xs font-bold text-zuno-gold">
+          <Sparkles className="h-3.5 w-3.5" /> SPOT 1 IS FREE FOREVER • UPGRADE ANYTIME
         </div>
 
-        <h2 className="mt-2 text-3xl font-extrabold leading-tight text-white md:text-4xl">
+        <h2 className="mt-2 text-2xl font-extrabold leading-tight text-white md:text-3xl">
           Unlock Full Adventure!
         </h2>
-        <p className="mt-1 text-base text-zuno-lavender/80">
-          Spot 1 is free forever! Unlock Spots 2–5 across all 3 training worlds for the whole family.
+        <p className="mt-1 text-xs text-zuno-lavender/80 md:text-sm">
+          Unlock Spots 2 through 5 across all 3 training worlds. Choose the plan that works best for your family:
         </p>
 
-        {/* Benefits list */}
-        <div className="my-4 flex flex-col gap-2.5 rounded-2xl border border-white/10 bg-white/5 p-4 text-left">
-          <div className="flex items-start gap-3">
-            <div className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-zuno-cyan/20 text-zuno-cyan">
-              <Check className="h-3.5 w-3.5 stroke-[3]" />
+        {/* 3 Selectable Plan Cards */}
+        <div className="my-3.5 flex flex-col gap-2.5 text-left md:gap-3">
+          {/* 1. Yearly Plan (Best Value / Recommended) */}
+          <button
+            type="button"
+            onClick={() => {
+              zunoAudio.playTap();
+              setSelectedPlan('yearly');
+            }}
+            className={clsx(
+              'relative flex flex-col gap-1 rounded-2xl border-2 p-3.5 transition-all md:p-4',
+              selectedPlan === 'yearly'
+                ? 'border-zuno-cyan bg-zuno-cyan/15 shadow-glow-cyan'
+                : 'border-white/10 bg-white/5 hover:border-white/25 hover:bg-white/10',
+            )}
+          >
+            <div className="absolute -top-2.5 right-4 rounded-full bg-gradient-to-r from-zuno-cyan to-zuno-gold px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-zuno-night shadow-md">
+              {plans.yearly.badge}
             </div>
-            <div>
-              <p className="text-sm font-bold text-white">All 15 Adventure Spots</p>
-              <p className="text-xs text-zuno-lavender/70">
-                Unlock Shady Bush, Dragonfly Glade, Dusk Clearing, Storm Ridge &amp; more.
-              </p>
-            </div>
-          </div>
 
-          <div className="flex items-start gap-3">
-            <div className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-zuno-gold/20 text-zuno-gold">
-              <Check className="h-3.5 w-3.5 stroke-[3]" />
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div
+                  className={clsx(
+                    'flex h-5 w-5 items-center justify-center rounded-full border-2 transition-colors',
+                    selectedPlan === 'yearly'
+                      ? 'border-zuno-cyan bg-zuno-cyan text-zuno-night'
+                      : 'border-white/30',
+                  )}
+                >
+                  {selectedPlan === 'yearly' && <Check className="h-3.5 w-3.5 stroke-[3]" />}
+                </div>
+                <span className="text-base font-bold text-white md:text-lg">{plans.yearly.title}</span>
+              </div>
+              <div className="text-right">
+                <span className="text-xl font-extrabold text-zuno-gold md:text-2xl">{plans.yearly.price}</span>
+                <span className="text-xs font-medium text-zuno-lavender/70"> {plans.yearly.period}</span>
+              </div>
             </div>
-            <div>
-              <p className="text-sm font-bold text-white">All 3 Training Worlds</p>
-              <p className="text-xs text-zuno-lavender/70">
-                Spark Berry Grove (Wait-Power), Thunder Chimes (Memory), Twin Currents (Coordination).
-              </p>
-            </div>
-          </div>
+            <p className="ml-7 text-xs font-semibold text-zuno-cyan">{plans.yearly.savings}</p>
+          </button>
 
-          <div className="flex items-start gap-3">
-            <div className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-zuno-lavender/20 text-zuno-lavender">
-              <Check className="h-3.5 w-3.5 stroke-[3]" />
+          {/* 2. Monthly Plan */}
+          <button
+            type="button"
+            onClick={() => {
+              zunoAudio.playTap();
+              setSelectedPlan('monthly');
+            }}
+            className={clsx(
+              'relative flex flex-col gap-1 rounded-2xl border-2 p-3.5 transition-all md:p-4',
+              selectedPlan === 'monthly'
+                ? 'border-zuno-cyan bg-zuno-cyan/15 shadow-glow-cyan'
+                : 'border-white/10 bg-white/5 hover:border-white/25 hover:bg-white/10',
+            )}
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div
+                  className={clsx(
+                    'flex h-5 w-5 items-center justify-center rounded-full border-2 transition-colors',
+                    selectedPlan === 'monthly'
+                      ? 'border-zuno-cyan bg-zuno-cyan text-zuno-night'
+                      : 'border-white/30',
+                  )}
+                >
+                  {selectedPlan === 'monthly' && <Check className="h-3.5 w-3.5 stroke-[3]" />}
+                </div>
+                <span className="text-base font-bold text-white md:text-lg">{plans.monthly.title}</span>
+              </div>
+              <div className="text-right">
+                <span className="text-xl font-extrabold text-white md:text-2xl">{plans.monthly.price}</span>
+                <span className="text-xs font-medium text-zuno-lavender/70"> {plans.monthly.period}</span>
+              </div>
             </div>
-            <div>
-              <p className="text-sm font-bold text-white">Lifetime Family Access</p>
-              <p className="text-xs text-zuno-lavender/70">
-                Pay once. Works for all child profiles on this device forever. 100% Ad-Free &amp; Private.
-              </p>
+            <p className="ml-7 text-xs text-zuno-lavender/70">{plans.monthly.savings}</p>
+          </button>
+
+          {/* 3. Early Lifetime Pass */}
+          <button
+            type="button"
+            onClick={() => {
+              zunoAudio.playTap();
+              setSelectedPlan('lifetime');
+            }}
+            className={clsx(
+              'relative flex flex-col gap-1 rounded-2xl border-2 p-3.5 transition-all md:p-4',
+              selectedPlan === 'lifetime'
+                ? 'border-zuno-gold bg-zuno-gold/15 shadow-glow-gold'
+                : 'border-white/10 bg-white/5 hover:border-white/25 hover:bg-white/10',
+            )}
+          >
+            <div className="absolute -top-2.5 right-4 rounded-full border border-zuno-gold/50 bg-zuno-night px-2.5 py-0.5 text-[10px] font-bold text-zuno-gold shadow-sm">
+              {plans.lifetime.badge}
             </div>
-          </div>
+
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div
+                  className={clsx(
+                    'flex h-5 w-5 items-center justify-center rounded-full border-2 transition-colors',
+                    selectedPlan === 'lifetime'
+                      ? 'border-zuno-gold bg-zuno-gold text-zuno-night'
+                      : 'border-white/30',
+                  )}
+                >
+                  {selectedPlan === 'lifetime' && <Check className="h-3.5 w-3.5 stroke-[3]" />}
+                </div>
+                <span className="text-base font-bold text-white md:text-lg">{plans.lifetime.title}</span>
+              </div>
+              <div className="text-right">
+                <span className="text-xl font-extrabold text-zuno-gold md:text-2xl">{plans.lifetime.price}</span>
+                <span className="text-xs font-medium text-zuno-lavender/70"> {plans.lifetime.period}</span>
+              </div>
+            </div>
+            <p className="ml-7 text-xs text-zuno-lavender/70">{plans.lifetime.savings}</p>
+          </button>
         </div>
 
-        {/* Status / Error Message */}
+        {/* Feature summary */}
+        <div className="mb-3 flex items-center justify-around rounded-xl border border-white/10 bg-white/5 py-2 text-xs text-zuno-lavender/80">
+          <span className="flex items-center gap-1 font-semibold">
+            <Check className="h-3.5 w-3.5 text-zuno-cyan" /> All 15 Spots
+          </span>
+          <span className="flex items-center gap-1 font-semibold">
+            <Check className="h-3.5 w-3.5 text-zuno-gold" /> 3 Worlds
+          </span>
+          <span className="flex items-center gap-1 font-semibold">
+            <Check className="h-3.5 w-3.5 text-zuno-lavender" /> 100% Ad-Free
+          </span>
+        </div>
+
+        {/* Error / Status Message */}
         {message && (
-          <p className="mb-3 text-sm font-semibold text-zuno-coral animate-shake">
+          <p className="mb-3 text-xs font-semibold text-zuno-coral animate-shake">
             {message}
           </p>
         )}
 
-        {/* Action Button */}
+        {/* Purchase CTA */}
         <button
           type="button"
           id="btn-buy-full-adventure"
           onClick={handleStartPurchase}
           disabled={loading || isFullAdventureUnlocked}
-          className="zuno-btn-primary min-h-[62px] w-full gap-2 text-xl font-black shadow-glow-cyan transition-transform active:scale-95 disabled:opacity-50"
+          className="zuno-btn-primary min-h-[58px] w-full gap-2 text-lg font-black shadow-glow-cyan transition-transform active:scale-95 disabled:opacity-50 md:min-h-[62px] md:text-xl"
         >
           {loading ? (
             <>
-              <RefreshCw className="h-6 w-6 animate-spin" /> Processing…
+              <RefreshCw className="h-6 w-6 animate-spin" /> Connecting to Google Play…
             </>
           ) : isFullAdventureUnlocked ? (
             <>
-              <Check className="h-6 w-6" /> Full Adventure Unlocked!
+              <Check className="h-6 w-6" /> Adventure Pass Active!
             </>
           ) : (
             <>
-              <Zap className="h-6 w-6 fill-current" /> Unlock Full Adventure • {price}
+              <Zap className="h-6 w-6 fill-current" />
+              <span>Unlock Adventure • {activePlan.price} {activePlan.type === 'subs' ? activePlan.period : ''}</span>
             </>
           )}
         </button>
 
         {/* Footer controls: Restore & Family Policy Note */}
-        <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-white/10 pt-3 text-xs text-zuno-lavender/60">
+        <div className="mt-3.5 flex flex-wrap items-center justify-between gap-2 border-t border-white/10 pt-2.5 text-xs text-zuno-lavender/60">
           <span className="flex items-center gap-1">
-            <ShieldCheck className="h-3.5 w-3.5 text-zuno-cyan" /> Grown-up check required
+            <ShieldCheck className="h-3.5 w-3.5 text-zuno-cyan" /> Grown-up verification required
           </span>
           <button
             type="button"
@@ -256,7 +351,7 @@ export default function PaywallModal() {
           </button>
         </div>
 
-        {/* Web Sandbox test toggle (convenience for development) */}
+        {/* Web Sandbox test toggle */}
         {!isNative && (
           <div className="mt-3 flex items-center justify-center gap-2 rounded-xl bg-white/5 p-2 text-xs text-zuno-lavender/60">
             <span>Web Sandbox:</span>
@@ -269,7 +364,7 @@ export default function PaywallModal() {
               }}
               className="rounded bg-zuno-cyan/20 px-2 py-0.5 font-bold text-zuno-cyan hover:bg-zuno-cyan/30"
             >
-              Simulate $19 Buy
+              Simulate Buy
             </button>
             <button
               type="button"
@@ -285,7 +380,7 @@ export default function PaywallModal() {
         )}
       </div>
 
-      {/* Parental Gate Modal (Grown-ups arithmetic check before billing) */}
+      {/* Parental Gate Modal */}
       {showGate && (
         <div
           className="fixed inset-0 z-[60] flex items-center justify-center bg-zuno-night/90 p-4 backdrop-blur-md"
@@ -297,7 +392,7 @@ export default function PaywallModal() {
             <ShieldCheck className="mx-auto h-12 w-12 text-zuno-cyan" />
             <h3 className="mt-2 text-2xl font-bold text-zuno-lavender">Grown-Ups Only</h3>
             <p className="mt-1 text-sm text-zuno-lavender/70">
-              Please solve this quick challenge to authorize the {price} purchase:
+              Please solve this quick challenge to authorize the {activePlan.title} ({activePlan.price}):
             </p>
             <p
               className={clsx(

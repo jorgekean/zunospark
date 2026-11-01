@@ -22,19 +22,30 @@ import com.getcapacitor.PluginMethod;
 import com.getcapacitor.annotation.CapacitorPlugin;
 
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 @CapacitorPlugin(name = "ZunoBilling")
 public class BillingPlugin extends Plugin implements PurchasesUpdatedListener {
 
-    public static final String PRODUCT_ID_FULL_ADVENTURE = "zunospark_full_adventure_19";
-    public static final String PRODUCT_ID_LEGACY = "zunospark_full_adventure_9";
+    // Monthly & Yearly Subscriptions
+    public static final String PRODUCT_ID_MONTHLY = "zunospark_pass_monthly_499";
+    public static final String PRODUCT_ID_YEARLY = "zunospark_pass_yearly_2999";
+
+    // Early Lifetime One-Time Non-Consumable
+    public static final String PRODUCT_ID_LIFETIME = "zunospark_pass_lifetime_4999";
+
+    // Legacy products for restore compatibility
+    public static final String PRODUCT_ID_LEGACY_19 = "zunospark_full_adventure_19";
+    public static final String PRODUCT_ID_LEGACY_9 = "zunospark_full_adventure_9";
+
     private static final String PREF_NAME = "zunospark_iap_prefs";
     private static final String KEY_PURCHASED = "full_adventure_unlocked";
 
     private BillingClient billingClient;
-    private ProductDetails cachedProductDetails = null;
+    private final Map<String, ProductDetails> cachedDetailsMap = new ConcurrentHashMap<>();
     private PluginCall activePurchaseCall = null;
 
     @Override
@@ -67,15 +78,15 @@ public class BillingPlugin extends Plugin implements PurchasesUpdatedListener {
             @Override
             public void onBillingSetupFinished(@NonNull BillingResult billingResult) {
                 if (billingResult.getResponseCode() == BillingClient.BillingResponseCode.OK) {
-                    queryProductDetailsInternal(null);
-                    queryPurchasesInternal();
+                    queryAllProductDetails(null);
+                    queryAllPurchases();
                     if (onConnected != null) onConnected.run();
                 }
             }
 
             @Override
             public void onBillingServiceDisconnected() {
-                // Retry connection automatically on next user action
+                // Reconnect will happen on next action
             }
         });
     }
@@ -90,57 +101,109 @@ public class BillingPlugin extends Plugin implements PurchasesUpdatedListener {
         return prefs.getBoolean(KEY_PURCHASED, false);
     }
 
-    private void queryPurchasesInternal() {
+    private boolean isSupportedProduct(String productId) {
+        return PRODUCT_ID_MONTHLY.equals(productId) ||
+               PRODUCT_ID_YEARLY.equals(productId) ||
+               PRODUCT_ID_LIFETIME.equals(productId) ||
+               PRODUCT_ID_LEGACY_19.equals(productId) ||
+               PRODUCT_ID_LEGACY_9.equals(productId);
+    }
+
+    private void queryAllPurchases() {
         if (billingClient == null || !billingClient.isReady()) return;
 
-        QueryPurchasesParams params = QueryPurchasesParams.newBuilder()
+        // Query INAPP purchases
+        QueryPurchasesParams inAppParams = QueryPurchasesParams.newBuilder()
                 .setProductType(BillingClient.ProductType.INAPP)
                 .build();
 
-        billingClient.queryPurchasesAsync(params, (billingResult, purchases) -> {
-            if (billingResult.getResponseCode() == BillingClient.BillingResponseCode.OK) {
-                boolean hasFullAdventure = false;
-                for (Purchase p : purchases) {
-                    if ((p.getProducts().contains(PRODUCT_ID_FULL_ADVENTURE) || p.getProducts().contains(PRODUCT_ID_LEGACY)) &&
-                        p.getPurchaseState() == Purchase.PurchaseState.PURCHASED) {
-                        hasFullAdventure = true;
-                        if (!p.isAcknowledged()) {
-                            acknowledge(p);
+        billingClient.queryPurchasesAsync(inAppParams, (inAppResult, inAppPurchases) -> {
+            boolean hasActive = false;
+            if (inAppResult.getResponseCode() == BillingClient.BillingResponseCode.OK && inAppPurchases != null) {
+                for (Purchase p : inAppPurchases) {
+                    for (String id : p.getProducts()) {
+                        if (isSupportedProduct(id) && p.getPurchaseState() == Purchase.PurchaseState.PURCHASED) {
+                            hasActive = true;
+                            if (!p.isAcknowledged()) acknowledge(p);
                         }
                     }
                 }
-                savePurchaseState(hasFullAdventure);
             }
+
+            // Query SUBS purchases
+            final boolean finalHasInApp = hasActive;
+            QueryPurchasesParams subsParams = QueryPurchasesParams.newBuilder()
+                    .setProductType(BillingClient.ProductType.SUBS)
+                    .build();
+
+            billingClient.queryPurchasesAsync(subsParams, (subsResult, subsPurchases) -> {
+                boolean hasSubscription = false;
+                if (subsResult.getResponseCode() == BillingClient.BillingResponseCode.OK && subsPurchases != null) {
+                    for (Purchase p : subsPurchases) {
+                        for (String id : p.getProducts()) {
+                            if (isSupportedProduct(id) && p.getPurchaseState() == Purchase.PurchaseState.PURCHASED) {
+                                hasSubscription = true;
+                                if (!p.isAcknowledged()) acknowledge(p);
+                            }
+                        }
+                    }
+                }
+                savePurchaseState(finalHasInApp || hasSubscription);
+            });
         });
     }
 
-    private void queryProductDetailsInternal(Runnable onDone) {
+    private void queryAllProductDetails(Runnable onDone) {
         if (billingClient == null || !billingClient.isReady()) {
             if (onDone != null) onDone.run();
             return;
         }
 
-        List<QueryProductDetailsParams.Product> productList = new ArrayList<>();
-        productList.add(
-                QueryProductDetailsParams.Product.newBuilder()
-                        .setProductId(PRODUCT_ID_FULL_ADVENTURE)
-                        .setProductType(BillingClient.ProductType.INAPP)
-                        .build()
-        );
+        // 1. INAPP products (Lifetime & Legacy)
+        List<QueryProductDetailsParams.Product> inAppList = new ArrayList<>();
+        inAppList.add(QueryProductDetailsParams.Product.newBuilder()
+                .setProductId(PRODUCT_ID_LIFETIME)
+                .setProductType(BillingClient.ProductType.INAPP)
+                .build());
+        inAppList.add(QueryProductDetailsParams.Product.newBuilder()
+                .setProductId(PRODUCT_ID_LEGACY_19)
+                .setProductType(BillingClient.ProductType.INAPP)
+                .build());
 
-        QueryProductDetailsParams params = QueryProductDetailsParams.newBuilder()
-                .setProductList(productList)
+        QueryProductDetailsParams inAppParams = QueryProductDetailsParams.newBuilder()
+                .setProductList(inAppList)
                 .build();
 
-        billingClient.queryProductDetailsAsync(params, (billingResult, productDetailsList) -> {
-            if (billingResult.getResponseCode() == BillingClient.BillingResponseCode.OK) {
-                for (ProductDetails details : productDetailsList) {
-                    if (details.getProductId().equals(PRODUCT_ID_FULL_ADVENTURE)) {
-                        cachedProductDetails = details;
-                    }
+        billingClient.queryProductDetailsAsync(inAppParams, (inAppResult, inAppDetailsList) -> {
+            if (inAppResult.getResponseCode() == BillingClient.BillingResponseCode.OK && inAppDetailsList != null) {
+                for (ProductDetails pd : inAppDetailsList) {
+                    cachedDetailsMap.put(pd.getProductId(), pd);
                 }
             }
-            if (onDone != null) onDone.run();
+
+            // 2. SUBS products (Monthly & Yearly)
+            List<QueryProductDetailsParams.Product> subsList = new ArrayList<>();
+            subsList.add(QueryProductDetailsParams.Product.newBuilder()
+                    .setProductId(PRODUCT_ID_MONTHLY)
+                    .setProductType(BillingClient.ProductType.SUBS)
+                    .build());
+            subsList.add(QueryProductDetailsParams.Product.newBuilder()
+                    .setProductId(PRODUCT_ID_YEARLY)
+                    .setProductType(BillingClient.ProductType.SUBS)
+                    .build());
+
+            QueryProductDetailsParams subsParams = QueryProductDetailsParams.newBuilder()
+                    .setProductList(subsList)
+                    .build();
+
+            billingClient.queryProductDetailsAsync(subsParams, (subsResult, subsDetailsList) -> {
+                if (subsResult.getResponseCode() == BillingClient.BillingResponseCode.OK && subsDetailsList != null) {
+                    for (ProductDetails pd : subsDetailsList) {
+                        cachedDetailsMap.put(pd.getProductId(), pd);
+                    }
+                }
+                if (onDone != null) onDone.run();
+            });
         });
     }
 
@@ -153,6 +216,29 @@ public class BillingPlugin extends Plugin implements PurchasesUpdatedListener {
         });
     }
 
+    private String getFormattedPrice(String productId, String fallback) {
+        ProductDetails pd = cachedDetailsMap.get(productId);
+        if (pd == null) return fallback;
+
+        // Try one-time purchase
+        ProductDetails.OneTimePurchaseOfferDetails oneTime = pd.getOneTimePurchaseOfferDetails();
+        if (oneTime != null && oneTime.getFormattedPrice() != null) {
+            return oneTime.getFormattedPrice();
+        }
+
+        // Try subscription offers
+        List<ProductDetails.SubscriptionOfferDetails> subOffers = pd.getSubscriptionOfferDetails();
+        if (subOffers != null && !subOffers.isEmpty()) {
+            ProductDetails.PricingPhases phases = subOffers.get(0).getPricingPhases();
+            if (phases != null && phases.getPricingPhaseList() != null && !phases.getPricingPhaseList().isEmpty()) {
+                String p = phases.getPricingPhaseList().get(0).getFormattedPrice();
+                if (p != null) return p;
+            }
+        }
+
+        return fallback;
+    }
+
     @Override
     public void onPurchasesUpdated(@NonNull BillingResult billingResult, List<Purchase> purchases) {
         if (activePurchaseCall == null) return;
@@ -160,12 +246,13 @@ public class BillingPlugin extends Plugin implements PurchasesUpdatedListener {
         if (billingResult.getResponseCode() == BillingClient.BillingResponseCode.OK && purchases != null) {
             boolean purchased = false;
             for (Purchase p : purchases) {
-                if (p.getProducts().contains(PRODUCT_ID_FULL_ADVENTURE) &&
-                    p.getPurchaseState() == Purchase.PurchaseState.PURCHASED) {
-                    purchased = true;
-                    savePurchaseState(true);
-                    if (!p.isAcknowledged()) {
-                        acknowledge(p);
+                for (String id : p.getProducts()) {
+                    if (isSupportedProduct(id) && p.getPurchaseState() == Purchase.PurchaseState.PURCHASED) {
+                        purchased = true;
+                        savePurchaseState(true);
+                        if (!p.isAcknowledged()) {
+                            acknowledge(p);
+                        }
                     }
                 }
             }
@@ -192,33 +279,41 @@ public class BillingPlugin extends Plugin implements PurchasesUpdatedListener {
     @PluginMethod
     public void getProductDetails(PluginCall call) {
         connectBilling(() -> {
-            if (cachedProductDetails != null) {
-                ProductDetails.OneTimePurchaseOfferDetails offer = cachedProductDetails.getOneTimePurchaseOfferDetails();
-                String price = offer != null ? offer.getFormattedPrice() : "$19.00";
-
+            queryAllProductDetails(() -> {
                 JSObject ret = new JSObject();
-                ret.put("id", PRODUCT_ID_FULL_ADVENTURE);
-                ret.put("title", cachedProductDetails.getTitle());
-                ret.put("description", cachedProductDetails.getDescription());
-                ret.put("formattedPrice", price);
+
+                // Monthly
+                JSObject monthly = new JSObject();
+                monthly.put("id", PRODUCT_ID_MONTHLY);
+                monthly.put("type", "subs");
+                monthly.put("title", "Monthly Adventure Pass");
+                monthly.put("price", getFormattedPrice(PRODUCT_ID_MONTHLY, "$4.99"));
+                monthly.put("period", "/month");
+                ret.put("monthly", monthly);
+
+                // Yearly (Best Value)
+                JSObject yearly = new JSObject();
+                yearly.put("id", PRODUCT_ID_YEARLY);
+                yearly.put("type", "subs");
+                yearly.put("title", "Yearly Adventure Pass");
+                yearly.put("price", getFormattedPrice(PRODUCT_ID_YEARLY, "$29.99"));
+                yearly.put("period", "/year");
+                ret.put("yearly", yearly);
+
+                // Early Lifetime
+                JSObject lifetime = new JSObject();
+                lifetime.put("id", PRODUCT_ID_LIFETIME);
+                lifetime.put("type", "inapp");
+                lifetime.put("title", "Early Lifetime Pass");
+                lifetime.put("price", getFormattedPrice(PRODUCT_ID_LIFETIME, "$49.99"));
+                lifetime.put("period", "one-time");
+                ret.put("lifetime", lifetime);
+
+                // Default legacy compatibility field
+                ret.put("formattedPrice", getFormattedPrice(PRODUCT_ID_YEARLY, "$29.99"));
+
                 call.resolve(ret);
-            } else {
-                queryProductDetailsInternal(() -> {
-                    JSObject ret = new JSObject();
-                    ret.put("id", PRODUCT_ID_FULL_ADVENTURE);
-                    if (cachedProductDetails != null) {
-                        ProductDetails.OneTimePurchaseOfferDetails offer = cachedProductDetails.getOneTimePurchaseOfferDetails();
-                        ret.put("title", cachedProductDetails.getTitle());
-                        ret.put("description", cachedProductDetails.getDescription());
-                        ret.put("formattedPrice", offer != null ? offer.getFormattedPrice() : "$19.00");
-                    } else {
-                        ret.put("title", "ZunoSpark Full Adventure Pass");
-                        ret.put("description", "Unlock all 15 Spots across all zones.");
-                        ret.put("formattedPrice", "$19.00");
-                    }
-                    call.resolve(ret);
-                });
-            }
+            });
         });
     }
 
@@ -227,25 +322,51 @@ public class BillingPlugin extends Plugin implements PurchasesUpdatedListener {
         boolean localState = getSavedPurchaseState();
         connectBilling(() -> {
             if (billingClient != null && billingClient.isReady()) {
-                QueryPurchasesParams params = QueryPurchasesParams.newBuilder()
+                // Check INAPP
+                QueryPurchasesParams inAppParams = QueryPurchasesParams.newBuilder()
                         .setProductType(BillingClient.ProductType.INAPP)
                         .build();
 
-                billingClient.queryPurchasesAsync(params, (billingResult, purchases) -> {
+                billingClient.queryPurchasesAsync(inAppParams, (inAppResult, inAppPurchases) -> {
                     boolean isPurchased = localState;
-                    if (billingResult.getResponseCode() == BillingClient.BillingResponseCode.OK) {
-                        for (Purchase p : purchases) {
-                            if (p.getProducts().contains(PRODUCT_ID_FULL_ADVENTURE) &&
-                                p.getPurchaseState() == Purchase.PurchaseState.PURCHASED) {
-                                isPurchased = true;
-                                break;
+                    if (inAppResult.getResponseCode() == BillingClient.BillingResponseCode.OK && inAppPurchases != null) {
+                        for (Purchase p : inAppPurchases) {
+                            for (String id : p.getProducts()) {
+                                if (isSupportedProduct(id) && p.getPurchaseState() == Purchase.PurchaseState.PURCHASED) {
+                                    isPurchased = true;
+                                    break;
+                                }
                             }
                         }
-                        savePurchaseState(isPurchased);
                     }
-                    JSObject ret = new JSObject();
-                    ret.put("purchased", isPurchased);
-                    call.resolve(ret);
+
+                    final boolean foundInApp = isPurchased;
+
+                    // Check SUBS
+                    QueryPurchasesParams subsParams = QueryPurchasesParams.newBuilder()
+                            .setProductType(BillingClient.ProductType.SUBS)
+                            .build();
+
+                    billingClient.queryPurchasesAsync(subsParams, (subsResult, subsPurchases) -> {
+                        boolean foundSubs = false;
+                        if (subsResult.getResponseCode() == BillingClient.BillingResponseCode.OK && subsPurchases != null) {
+                            for (Purchase p : subsPurchases) {
+                                for (String id : p.getProducts()) {
+                                    if (isSupportedProduct(id) && p.getPurchaseState() == Purchase.PurchaseState.PURCHASED) {
+                                        foundSubs = true;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+
+                        boolean finalUnlocked = foundInApp || foundSubs;
+                        savePurchaseState(finalUnlocked);
+
+                        JSObject ret = new JSObject();
+                        ret.put("purchased", finalUnlocked);
+                        call.resolve(ret);
+                    });
                 });
             } else {
                 JSObject ret = new JSObject();
@@ -258,34 +379,42 @@ public class BillingPlugin extends Plugin implements PurchasesUpdatedListener {
     @PluginMethod
     public void purchase(PluginCall call) {
         activePurchaseCall = call;
+        String requestedProductId = call.getString("productId", PRODUCT_ID_YEARLY);
 
         connectBilling(() -> {
-            if (cachedProductDetails == null) {
-                queryProductDetailsInternal(() -> {
-                    launchFlow(call);
-                });
+            if (!cachedDetailsMap.containsKey(requestedProductId)) {
+                queryAllProductDetails(() -> launchFlow(call, requestedProductId));
             } else {
-                launchFlow(call);
+                launchFlow(call, requestedProductId);
             }
         });
     }
 
-    private void launchFlow(PluginCall call) {
-        if (cachedProductDetails == null) {
+    private void launchFlow(PluginCall call, String productId) {
+        ProductDetails details = cachedDetailsMap.get(productId);
+
+        if (details == null) {
             JSObject ret = new JSObject();
             ret.put("success", false);
-            ret.put("message", "Product details not available from Google Play. Please ensure product ID zunospark_full_adventure_19 is configured in Play Console.");
+            ret.put("message", "Product details not available from Google Play for " + productId + ". Please verify Google Play Console configuration.");
             call.resolve(ret);
             activePurchaseCall = null;
             return;
         }
 
+        BillingFlowParams.ProductDetailsParams.Builder pBuilder = BillingFlowParams.ProductDetailsParams.newBuilder()
+                .setProductDetails(details);
+
+        // If it is a subscription, Google Play requires an offerToken
+        if (BillingClient.ProductType.SUBS.equals(details.getProductType())) {
+            List<ProductDetails.SubscriptionOfferDetails> offers = details.getSubscriptionOfferDetails();
+            if (offers != null && !offers.isEmpty()) {
+                pBuilder.setOfferToken(offers.get(0).getOfferToken());
+            }
+        }
+
         List<BillingFlowParams.ProductDetailsParams> productDetailsParamsList = new ArrayList<>();
-        productDetailsParamsList.add(
-                BillingFlowParams.ProductDetailsParams.newBuilder()
-                        .setProductDetails(cachedProductDetails)
-                        .build()
-        );
+        productDetailsParamsList.add(pBuilder.build());
 
         BillingFlowParams billingFlowParams = BillingFlowParams.newBuilder()
                 .setProductDetailsParamsList(productDetailsParamsList)
@@ -315,34 +444,52 @@ public class BillingPlugin extends Plugin implements PurchasesUpdatedListener {
                 return;
             }
 
-            QueryPurchasesParams params = QueryPurchasesParams.newBuilder()
+            // 1. Query INAPP purchases
+            QueryPurchasesParams inAppParams = QueryPurchasesParams.newBuilder()
                     .setProductType(BillingClient.ProductType.INAPP)
                     .build();
 
-            billingClient.queryPurchasesAsync(params, (billingResult, purchases) -> {
-                boolean hasFullAdventure = false;
-                if (billingResult.getResponseCode() == BillingClient.BillingResponseCode.OK && purchases != null) {
-                    for (Purchase p : purchases) {
-                        if ((p.getProducts().contains(PRODUCT_ID_FULL_ADVENTURE) || p.getProducts().contains(PRODUCT_ID_LEGACY)) &&
-                            p.getPurchaseState() == Purchase.PurchaseState.PURCHASED) {
-                            hasFullAdventure = true;
-                            if (!p.isAcknowledged()) {
-                                acknowledge(p);
+            billingClient.queryPurchasesAsync(inAppParams, (inAppResult, inAppPurchases) -> {
+                boolean hasActiveInApp = false;
+                if (inAppResult.getResponseCode() == BillingClient.BillingResponseCode.OK && inAppPurchases != null) {
+                    for (Purchase p : inAppPurchases) {
+                        for (String id : p.getProducts()) {
+                            if (isSupportedProduct(id) && p.getPurchaseState() == Purchase.PurchaseState.PURCHASED) {
+                                hasActiveInApp = true;
+                                if (!p.isAcknowledged()) acknowledge(p);
                             }
                         }
                     }
-                    savePurchaseState(hasFullAdventure);
+                }
+
+                final boolean finalInApp = hasActiveInApp;
+
+                // 2. Query SUBS purchases
+                QueryPurchasesParams subsParams = QueryPurchasesParams.newBuilder()
+                        .setProductType(BillingClient.ProductType.SUBS)
+                        .build();
+
+                billingClient.queryPurchasesAsync(subsParams, (subsResult, subsPurchases) -> {
+                    boolean hasActiveSubs = false;
+                    if (subsResult.getResponseCode() == BillingClient.BillingResponseCode.OK && subsPurchases != null) {
+                        for (Purchase p : subsPurchases) {
+                            for (String id : p.getProducts()) {
+                                if (isSupportedProduct(id) && p.getPurchaseState() == Purchase.PurchaseState.PURCHASED) {
+                                    hasActiveSubs = true;
+                                    if (!p.isAcknowledged()) acknowledge(p);
+                                }
+                            }
+                        }
+                    }
+
+                    boolean isUnlocked = finalInApp || hasActiveSubs;
+                    savePurchaseState(isUnlocked);
+
                     JSObject ret = new JSObject();
                     ret.put("restored", true);
-                    ret.put("purchased", hasFullAdventure);
+                    ret.put("purchased", isUnlocked);
                     call.resolve(ret);
-                } else {
-                    JSObject ret = new JSObject();
-                    ret.put("restored", false);
-                    ret.put("purchased", getSavedPurchaseState());
-                    ret.put("message", billingResult.getDebugMessage());
-                    call.resolve(ret);
-                }
+                });
             });
         });
     }

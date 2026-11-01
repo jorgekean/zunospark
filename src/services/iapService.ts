@@ -1,17 +1,77 @@
 import { Capacitor, registerPlugin } from '@capacitor/core';
 
 export const IAP_STORAGE_KEY = 'zunospark.iap.unlocked.v1';
-export const FULL_ADVENTURE_PRODUCT_ID = 'zunospark_full_adventure_19';
+
+export type PlanId = 'yearly' | 'monthly' | 'lifetime';
+
+export interface PlanDetails {
+  id: string;
+  type: 'subs' | 'inapp';
+  title: string;
+  price: string;
+  period: string;
+  badge?: string;
+  savings?: string;
+  description: string;
+}
+
+export const PRODUCT_IDS = {
+  MONTHLY: 'zunospark_pass_monthly_499',
+  YEARLY: 'zunospark_pass_yearly_2999',
+  LIFETIME: 'zunospark_pass_lifetime_4999',
+  LEGACY_19: 'zunospark_full_adventure_19',
+  LEGACY_9: 'zunospark_full_adventure_9',
+} as const;
+
+export const DEFAULT_PLANS: Record<PlanId, PlanDetails> = {
+  yearly: {
+    id: PRODUCT_IDS.YEARLY,
+    type: 'subs',
+    title: 'Yearly Adventure Pass',
+    price: '$29.99',
+    period: '/year',
+    badge: 'BEST VALUE · SAVE 50%',
+    savings: 'Only $2.50 / month · Billed annually',
+    description: 'Unlock all 15 Spots across all zones for the entire year.',
+  },
+  monthly: {
+    id: PRODUCT_IDS.MONTHLY,
+    type: 'subs',
+    title: 'Monthly Adventure Pass',
+    price: '$4.99',
+    period: '/month',
+    savings: 'Flexible family plan · Cancel anytime',
+    description: 'Unlock all 15 Spots month by month.',
+  },
+  lifetime: {
+    id: PRODUCT_IDS.LIFETIME,
+    type: 'inapp',
+    title: 'Early Lifetime Pass',
+    price: '$49.99',
+    period: 'one-time',
+    badge: 'EARLY PASS · PAY ONCE',
+    savings: 'Pay once, keep forever on this device',
+    description: 'Permanent access to all 15 Spots + all future training clearings.',
+  },
+};
+
+interface NativeProductPayload {
+  id: string;
+  type: string;
+  title: string;
+  price: string;
+  period: string;
+}
 
 interface ZunoBillingPlugin {
   getProductDetails: () => Promise<{
-    id: string;
-    title: string;
-    description: string;
-    formattedPrice: string;
+    monthly?: NativeProductPayload;
+    yearly?: NativeProductPayload;
+    lifetime?: NativeProductPayload;
+    formattedPrice?: string;
   }>;
   checkPurchaseStatus: () => Promise<{ purchased: boolean }>;
-  purchase: () => Promise<{
+  purchase: (options?: { productId?: string }) => Promise<{
     success: boolean;
     purchased?: boolean;
     cancelled?: boolean;
@@ -63,7 +123,7 @@ class IAPService {
   }
 
   /**
-   * Check if the user has purchased the one-time $19 full adventure pass.
+   * Check if the user has unlocked the full adventure.
    * On Android, queries Google Play Billing and updates local cache.
    */
   async checkUnlocked(): Promise<boolean> {
@@ -82,35 +142,39 @@ class IAPService {
   }
 
   /**
-   * Get product pricing & details (e.g. "$19.00")
+   * Get all available pricing tiers & details from Google Play Billing
    */
-  async getProductDetails(): Promise<{ id: string; price: string; title: string }> {
+  async getPlans(): Promise<Record<PlanId, PlanDetails>> {
+    const plans: Record<PlanId, PlanDetails> = {
+      yearly: { ...DEFAULT_PLANS.yearly },
+      monthly: { ...DEFAULT_PLANS.monthly },
+      lifetime: { ...DEFAULT_PLANS.lifetime },
+    };
+
     if (this.isNative()) {
       try {
         const details = await NativeBilling.getProductDetails();
-        return {
-          id: details.id || FULL_ADVENTURE_PRODUCT_ID,
-          price: details.formattedPrice || '$19.00',
-          title: details.title || 'ZunoSpark Full Adventure Pass',
-        };
+        if (details.yearly?.price) plans.yearly.price = details.yearly.price;
+        if (details.monthly?.price) plans.monthly.price = details.monthly.price;
+        if (details.lifetime?.price) plans.lifetime.price = details.lifetime.price;
       } catch (err) {
-        console.warn('getProductDetails native error:', err);
+        console.warn('getProductDetails native error, using default prices:', err);
       }
     }
-    return {
-      id: FULL_ADVENTURE_PRODUCT_ID,
-      price: '$19.00',
-      title: 'ZunoSpark Full Adventure Pass',
-    };
+
+    return plans;
   }
 
   /**
-   * Launch the one-time $19 purchase flow.
+   * Launch purchase flow for a specific plan tier
    */
-  async purchaseFullAdventure(): Promise<{ success: boolean; message?: string }> {
+  async purchasePlan(planId: PlanId = 'yearly'): Promise<{ success: boolean; message?: string }> {
+    const plan = DEFAULT_PLANS[planId];
+    const productId = plan ? plan.id : PRODUCT_IDS.YEARLY;
+
     if (this.isNative()) {
       try {
-        const res = await NativeBilling.purchase();
+        const res = await NativeBilling.purchase({ productId });
         if (res.success && res.purchased) {
           this.writeLocalStorage(true);
           return { success: true };
@@ -131,7 +195,14 @@ class IAPService {
   }
 
   /**
-   * Restore purchases (required for non-consumable in-app purchases)
+   * Legacy wrapper for compatibility
+   */
+  async purchaseFullAdventure(planId: PlanId = 'yearly'): Promise<{ success: boolean; message?: string }> {
+    return this.purchasePlan(planId);
+  }
+
+  /**
+   * Restore purchases (handles both subscriptions & lifetime in-app purchases)
    */
   async restorePurchases(): Promise<{ restored: boolean; purchased: boolean; message?: string }> {
     if (this.isNative()) {

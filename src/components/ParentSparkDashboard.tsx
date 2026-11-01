@@ -698,7 +698,7 @@ export default function ParentSparkDashboard({ onClose }: ParentSparkDashboardPr
                     <p className="mt-1 text-xs text-zuno-lavender/70 md:text-sm">
                       {isFullAdventureUnlocked
                         ? 'All 15 progressive challenge spots across all 3 clearings are permanently unlocked. Zero ads, 100% offline.'
-                        : 'Spot 1 in all 3 clearings is free forever! Unlock Spots 2 through 5 across the entire game for a one-time payment of $19.00 USD.'}
+                        : 'Spot 1 in all 3 clearings is free forever! Choose between $4.99/mo, $29.99/yr (Best Value), or a $49.99 early lifetime pass.'}
                     </p>
                     {restoreMessage && (
                       <p className="mt-2 text-xs font-semibold text-zuno-gold animate-pop-in">
@@ -717,7 +717,7 @@ export default function ParentSparkDashboard({ onClose }: ParentSparkDashboardPr
                       className="zuno-btn-primary flex h-11 items-center gap-2 px-5 text-sm font-bold shadow-glow-cyan"
                     >
                       <Crown className="h-4 w-4 fill-zuno-night" />
-                      <span>Unlock Full Adventure · $19.00</span>
+                      <span>Unlock Adventure Pass · From $4.99</span>
                     </button>
                   ) : (
                     <span className="text-xs font-bold text-zuno-gold px-3.5 py-1.5 rounded-full border border-zuno-gold/40 bg-zuno-gold/10">

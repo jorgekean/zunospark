@@ -352,12 +352,12 @@ export default function ZoneTrailMap({
               zunoAudio.playTap();
               openPaywall({ zoneId });
             }}
-            aria-label="Unlock Full Adventure for nineteen dollars"
+            aria-label="Unlock Adventure Pass"
             className="flex h-10 items-center gap-1.5 rounded-full border border-zuno-gold/60 bg-gradient-to-r from-amber-500/20 via-yellow-500/20 to-amber-500/20 px-3 py-1 text-xs font-bold text-zuno-gold shadow-glow-gold hover:scale-105 active:scale-95 md:h-12 md:px-4 md:text-sm"
           >
             <Crown className="h-4 w-4 fill-zuno-gold" />
-            <span className="hidden sm:inline">Full Pass</span>
-            <span>$19</span>
+            <span className="hidden sm:inline">Adventure Pass</span>
+            <span className="sm:hidden">Pass</span>
           </button>
         )}
 
