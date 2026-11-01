@@ -349,6 +349,24 @@
         </button>
       </div>
 
+      <!-- Voiceover & Synced Audio Script -->
+      <div style="background: rgba(139, 92, 246, 0.12); border: 1px solid rgba(167, 139, 250, 0.28); border-radius: 20px; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px;">
+        <div class="panel-section-title" style="color: #c4b5fd;">
+          🎙️ Voiceover Audio Script (Synched)
+        </div>
+        <div style="display: flex; gap: 8px;">
+          <button id="btnToggleVoiceover" class="btn-ghost" style="flex: 1; font-size: 0.85rem; padding: 8px 12px; background: rgba(56, 189, 248, 0.18); border-color: #38bdf8; color: #fff;">
+            🎙️ Voiceover: ON
+          </button>
+          <button id="btnToggleSubtitles" class="btn-ghost" style="flex: 1; font-size: 0.85rem; padding: 8px 12px; background: rgba(251, 191, 36, 0.18); border-color: #fbbf24; color: #fff;">
+            💬 Subtitles: ON
+          </button>
+        </div>
+        <div id="scriptTeleprompter" style="font-size: 0.86rem; color: #ede9fe; background: rgba(0,0,0,0.4); border-radius: 12px; padding: 12px; line-height: 1.45; border-left: 3px solid #fbbf24; min-height: 52px; font-style: italic;">
+          "Ever notice why standard screen time always triggers a meltdown the second you say 'all done'?"
+        </div>
+      </div>
+
       <!-- Export Recording -->
       <div>
         <div class="panel-section-title">🎬 Video Exporter (WebM / MP4)</div>
@@ -433,6 +451,7 @@
         const AudioCtor = window.AudioContext || window.webkitAudioContext;
         audioCtx = new AudioCtor();
         mediaDest = audioCtx.createMediaStreamDestination();
+        loadVoiceBuffers();
       }
       if (audioCtx.state === 'suspended') {
         audioCtx.resume();
@@ -477,36 +496,176 @@
     }
 
     /* ------------------------------------------------------------- */
-    /*  Sound Cues at Specific Timestamps                            */
+    /*  Voiceover Audio Script Cues & WebAudio Buffer Engine         */
+    /* ------------------------------------------------------------- */
+
+    const BASE_VOICE_URL = window.location.pathname.includes('/zunospark/') ? '/zunospark/' : './';
+
+    const SCRIPT_CUES = [
+      {
+        id: 0,
+        startSec: 0.5,
+        endSec: 8.0,
+        file: BASE_VOICE_URL + 'audio/voiceover/scene1_screentrap.wav',
+        text: "Ever notice why standard screen time always triggers a meltdown the second you say 'all done'? Rapid flashing videos hijack young attention spans, leading straight to dopamine crashes."
+      },
+      {
+        id: 1,
+        startSec: 8.5,
+        endSec: 18.0,
+        file: BASE_VOICE_URL + 'audio/voiceover/scene2_intro.wav',
+        text: "Meet ZunoSpark. A calm, low-stimulation executive function gym designed by pediatric occupational therapy principles."
+      },
+      {
+        id: 2,
+        startSec: 18.5,
+        endSec: 32.0,
+        file: BASE_VOICE_URL + 'audio/voiceover/scene3_waitpower.wav',
+        text: "In Spot One, Wait-Power, kids build impulse control. They practice waiting patiently while Zuno sleeps, and tap only when his spark glows golden. No penalties. No flashing lights."
+      },
+      {
+        id: 3,
+        startSec: 32.5,
+        endSec: 44.0,
+        file: BASE_VOICE_URL + 'audio/voiceover/scene4_chimes.wav',
+        text: "In Thunder Chimes, gentle marimba notes train auditory working memory and two-part instruction following."
+      },
+      {
+        id: 4,
+        startSec: 44.5,
+        endSec: 54.0,
+        file: BASE_VOICE_URL + 'audio/voiceover/scene5_transition.wav',
+        text: "And when micro-sessions end, there are zero lockout tears. Zuno's tail charges up, naturally inspiring your child to take their spark outside into the real world."
+      },
+      {
+        id: 5,
+        startSec: 54.2,
+        endSec: 60.0,
+        file: BASE_VOICE_URL + 'audio/voiceover/scene6_roi_cta.wav',
+        text: "Real waiting patience. Zero tantrums. Try ZunoSpark free on web, iOS, and Android today."
+      }
+    ];
+
+    let voiceEnabled = true;
+    let subtitlesEnabled = true;
+    const voiceBuffers = {};
+    let currentVoiceSource = null;
+    let activeCueId = -1;
+
+    async function loadVoiceBuffers() {
+      if (!audioCtx) return;
+      for (const cue of SCRIPT_CUES) {
+        if (!voiceBuffers[cue.id]) {
+          try {
+            const resp = await fetch(cue.file);
+            if (resp.ok) {
+              const arrayBuffer = await resp.arrayBuffer();
+              voiceBuffers[cue.id] = await audioCtx.decodeAudioData(arrayBuffer);
+            }
+          } catch (err) {
+            console.warn("Could not load voice buffer for cue", cue.id, err);
+          }
+        }
+      }
+    }
+
+    function stopVoice() {
+      if (currentVoiceSource) {
+        try {
+          currentVoiceSource.stop();
+          currentVoiceSource.disconnect();
+        } catch (e) {}
+        currentVoiceSource = null;
+      }
+      if ('speechSynthesis' in window) {
+        speechSynthesis.cancel();
+      }
+    }
+
+    function playVoiceCue(cueId, offsetSec = 0) {
+      if (!voiceEnabled || !audioCtx) return;
+      stopVoice();
+      const buffer = voiceBuffers[cueId];
+      if (buffer) {
+        const source = audioCtx.createBufferSource();
+        source.buffer = buffer;
+        const voiceGain = audioCtx.createGain();
+        voiceGain.gain.setValueAtTime(0.95, audioCtx.currentTime);
+        source.connect(voiceGain);
+        voiceGain.connect(audioCtx.destination);
+        if (mediaDest) voiceGain.connect(mediaDest);
+
+        const startOffset = Math.max(0, Math.min(offsetSec, buffer.duration - 0.1));
+        source.start(0, startOffset);
+        currentVoiceSource = source;
+      } else {
+        // Fallback to SpeechSynthesis if buffer is not yet decoded
+        if ('speechSynthesis' in window) {
+          const cue = SCRIPT_CUES.find(c => c.id === cueId);
+          if (cue) {
+            const utter = new SpeechSynthesisUtterance(cue.text);
+            utter.rate = 0.95;
+            utter.pitch = 1.05;
+            speechSynthesis.speak(utter);
+          }
+        }
+      }
+    }
+
+    function updateTeleprompter(text) {
+      const el = document.getElementById('scriptTeleprompter');
+      if (el) {
+        el.innerText = text ? `"${text}"` : '“Ready for next scene...”';
+      }
+    }
+
+    /* ------------------------------------------------------------- */
+    /*  Sound Cues & Voiceover Triggers at Specific Timestamps       */
     /* ------------------------------------------------------------- */
     let lastSoundSecond = -1;
 
     function checkSoundTriggers(sec) {
       const curSec = Math.floor(sec);
-      if (curSec === lastSoundSecond) return;
-      lastSoundSecond = curSec;
+      if (curSec !== lastSoundSecond) {
+        lastSoundSecond = curSec;
 
-      if (curSec === 1) playBuzzer();
-      if (curSec === 9) playMarimba(523.25); // C5
-      if (curSec === 10) playMarimba(659.25); // E5
-      if (curSec === 22) playMarimba(440); // A4
-      if (curSec === 26) {
-        // Pop win
-        playMarimba(523.25, 0);
-        playMarimba(659.25, 0.1);
-        playMarimba(783.99, 0.2);
-        playMarimba(1046.5, 0.3);
+        if (curSec === 1) playBuzzer();
+        if (curSec === 9) playMarimba(523.25); // C5
+        if (curSec === 10) playMarimba(659.25); // E5
+        if (curSec === 22) playMarimba(440); // A4
+        if (curSec === 26) {
+          // Pop win
+          playMarimba(523.25, 0);
+          playMarimba(659.25, 0.1);
+          playMarimba(783.99, 0.2);
+          playMarimba(1046.5, 0.3);
+        }
+        if (curSec === 34) playMarimba(659.25); // Chime 1
+        if (curSec === 36) playMarimba(783.99); // Chime 2
+        if (curSec === 39) {
+          playMarimba(659.25, 0);
+          playMarimba(783.99, 0.15);
+        }
+        if (curSec === 46) playHarpChord(); // Victory chord
+        if (curSec === 55) {
+          playMarimba(523.25, 0);
+          playMarimba(783.99, 0.12);
+        }
       }
-      if (curSec === 34) playMarimba(659.25); // Chime 1
-      if (curSec === 36) playMarimba(783.99); // Chime 2
-      if (curSec === 39) {
-        playMarimba(659.25, 0);
-        playMarimba(783.99, 0.15);
-      }
-      if (curSec === 46) playHarpChord(); // Victory chord
-      if (curSec === 55) {
-        playMarimba(523.25, 0);
-        playMarimba(783.99, 0.12);
+
+      // Check synchronized voiceover audio script cues
+      const cue = SCRIPT_CUES.find(c => sec >= c.startSec && sec < c.endSec);
+      if (cue && cue.id !== activeCueId) {
+        activeCueId = cue.id;
+        const offset = sec - cue.startSec;
+        if (isPlaying && soundEnabled && voiceEnabled) {
+          playVoiceCue(cue.id, offset);
+        }
+        updateTeleprompter(cue.text);
+      } else if (!cue && activeCueId !== -1) {
+        activeCueId = -1;
+        stopVoice();
+        updateTeleprompter("Ready for next scene...");
       }
     }
 
@@ -965,6 +1124,7 @@
       // Draw frame
       drawBackground(currentTime);
       renderScene(currentTime);
+      if (subtitlesEnabled) drawSubtitles(currentTime);
 
       // Update UI
       document.getElementById('timeDisplay').innerText = `${formatTime(currentTime)} / ${formatTime(TOTAL_DURATION)}`;
@@ -975,12 +1135,79 @@
     }
 
     /* ------------------------------------------------------------- */
+    /*  On-Canvas Synced Subtitle Renderer (Viral Social Captions)    */
+    /* ------------------------------------------------------------- */
+
+    function drawSubtitles(t) {
+      const cue = SCRIPT_CUES.find(c => t >= c.startSec && t < c.endSec);
+      if (!cue) return;
+
+      ctx.save();
+      const padX = 60;
+      const subW = W - (padX * 2);
+      const subY = 1700;
+      const subH = 140;
+
+      // Dark translucent pill with golden border
+      ctx.fillStyle = 'rgba(10, 6, 29, 0.9)';
+      ctx.strokeStyle = 'rgba(251, 191, 36, 0.45)';
+      ctx.lineWidth = 3;
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.7)';
+      ctx.shadowBlur = 25;
+      roundRect(padX, subY, subW, subH, 24);
+      ctx.fill();
+      ctx.stroke();
+
+      // Voice status indicator pulse
+      ctx.beginPath();
+      ctx.fillStyle = voiceEnabled ? '#38bdf8' : '#94a3b8';
+      ctx.arc(padX + 44, subY + 50, 10, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Label: Voiceover
+      ctx.font = '800 24px "Fredoka"';
+      ctx.fillStyle = '#c4b5fd';
+      ctx.textAlign = 'left';
+      ctx.fillText("🎙️ VOICE OVER", padX + 66, subY + 58);
+
+      // Subtitle spoken words (word-wrapped)
+      ctx.font = '700 32px "Outfit"';
+      ctx.fillStyle = '#ffffff';
+
+      const maxTextWidth = subW - 80;
+      const words = cue.text.split(' ');
+      let line1 = '';
+      let line2 = '';
+      for (const w of words) {
+        if (ctx.measureText(line1 + w + ' ').width < maxTextWidth && !line2) {
+          line1 += w + ' ';
+        } else {
+          line2 += w + ' ';
+        }
+      }
+
+      ctx.textAlign = 'left';
+      if (line2) {
+        ctx.fillStyle = '#ffffff';
+        ctx.fillText(line1.trim(), padX + 40, subY + 95);
+        ctx.fillStyle = '#fde68a';
+        ctx.fillText(line2.trim(), padX + 40, subY + 128);
+      } else {
+        ctx.fillStyle = '#ffffff';
+        ctx.fillText(line1.trim(), padX + 40, subY + 105);
+      }
+      ctx.restore();
+    }
+
+    /* ------------------------------------------------------------- */
     /*  User Interaction & Controls                                  */
     /* ------------------------------------------------------------- */
 
     const btnPlayPause = document.getElementById('btnPlayPause');
     const playIcon = document.getElementById('playIcon');
     const playText = document.getElementById('playText');
+    const btnToggleVoiceover = document.getElementById('btnToggleVoiceover');
+    const btnToggleSubtitles = document.getElementById('btnToggleSubtitles');
 
     function updatePlayButton() {
       if (isPlaying) {
@@ -996,31 +1223,63 @@
       initAudio();
       if (currentTime >= TOTAL_DURATION) currentTime = 0;
       isPlaying = !isPlaying;
+      if (!isPlaying) {
+        stopVoice();
+      } else {
+        activeCueId = -1; // re-trigger current voice cue
+      }
       updatePlayButton();
     });
 
     document.getElementById('btnReset').addEventListener('click', () => {
       currentTime = 0;
       isPlaying = false;
+      stopVoice();
+      activeCueId = -1;
       updatePlayButton();
+      updateTeleprompter("");
     });
 
     document.getElementById('btnToggleAudio').addEventListener('click', (e) => {
       initAudio();
       soundEnabled = !soundEnabled;
+      if (!soundEnabled) stopVoice();
       e.currentTarget.innerText = soundEnabled ? '🔊 Sound: ON' : '🔇 Sound: OFF';
     });
+
+    if (btnToggleVoiceover) {
+      btnToggleVoiceover.addEventListener('click', (e) => {
+        initAudio();
+        voiceEnabled = !voiceEnabled;
+        if (!voiceEnabled) stopVoice();
+        else activeCueId = -1;
+        e.currentTarget.innerText = voiceEnabled ? '🎙️ Voiceover: ON' : '🔇 Voiceover: OFF';
+        e.currentTarget.style.borderColor = voiceEnabled ? '#38bdf8' : 'rgba(255,255,255,0.2)';
+      });
+    }
+
+    if (btnToggleSubtitles) {
+      btnToggleSubtitles.addEventListener('click', (e) => {
+        subtitlesEnabled = !subtitlesEnabled;
+        e.currentTarget.innerText = subtitlesEnabled ? '💬 Subtitles: ON' : '💬 Subtitles: OFF';
+        e.currentTarget.style.borderColor = subtitlesEnabled ? '#fbbf24' : 'rgba(255,255,255,0.2)';
+      });
+    }
 
     document.getElementById('progressTrack').addEventListener('click', (e) => {
       const rect = e.currentTarget.getBoundingClientRect();
       const pos = (e.clientX - rect.left) / rect.width;
       currentTime = pos * TOTAL_DURATION;
+      stopVoice();
+      activeCueId = -1;
     });
 
     window.seekTo = function(sec) {
       initAudio();
       currentTime = sec;
       isPlaying = true;
+      stopVoice();
+      activeCueId = -1;
       updatePlayButton();
     };
 
@@ -1031,6 +1290,8 @@
     function recordVideo(duration) {
       initAudio();
       currentTime = 0;
+      activeCueId = -1;
+      stopVoice();
       isPlaying = true;
       updatePlayButton();
 
