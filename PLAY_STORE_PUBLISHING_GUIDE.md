@@ -12,6 +12,7 @@ This guide contains everything you need to publish **ZunoSpark** to the **Google
 | **Debug Test APK (.apk)** | `android/app/build/outputs/apk/debug/app-debug.apk` | Sideload directly onto any Android phone or tablet to test. |
 | **Hi-Res App Icon** | `android/play-store-icon-512.png` | 512x512 PNG (32-bit color, no transparency), required for store listing. |
 | **Feature Graphic** | `android/play-store-feature-graphic-1024x500.png` | 1024x500 PNG banner with Zuno & typography, required for store listing. |
+| **Phone Screenshots (5)** | `android/screenshots/` | 1080x1920 (9:16 aspect ratio) PNGs ready for store listing upload. |
 
 ---
 

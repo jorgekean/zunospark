@@ -11,6 +11,7 @@
     "cap:sync": "npm run build:cap && cap sync android",
     "cap:open": "cap open android",
     "cap:assets": "node scripts/generate-android-assets.cjs",
+    "cap:screenshots": "node scripts/generate-play-store-screenshots.cjs",
     "cap:build:debug": "npm run build:cap && cap sync android && node scripts/build-android.cjs debug",
     "cap:build:release": "npm run build:cap && cap sync android && node scripts/build-android.cjs release",
     "preview": "vite preview --host",
