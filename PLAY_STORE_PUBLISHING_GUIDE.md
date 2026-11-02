@@ -126,11 +126,15 @@ Under Google Play's Families Policy (target audience ages 3–6), **all in-app p
 2. **App Category**: **Education** / **Casual** / **Family**.
 3. **Ads**: Select **No, my app does not contain ads**.
 4. **In-App Purchases**: Select **Yes, my app contains in-app purchases**.
-5. **Data Safety Questionnaire**:
+5. **Privacy Policy URL**:
+   ```text
+   https://jorgekean.github.io/zunospark/privacy.html
+   ```
+6. **Data Safety Questionnaire**:
    - **Does your app collect or share user data?** Select **No**.
    - All profile data and game progress are stored **100% locally on device** (IndexedDB / SharedPreferences) and never transmitted to external servers. Google Play Billing handles transactions directly via Google Play Services.
-6. **Government Apps**: No.
-7. **Financial Features**: None.
+7. **Government Apps**: No.
+8. **Financial Features**: None.
 
 ---
 
