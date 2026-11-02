@@ -174,10 +174,13 @@ public class BillingPlugin extends Plugin implements PurchasesUpdatedListener {
                 .setProductList(inAppList)
                 .build();
 
-        billingClient.queryProductDetailsAsync(inAppParams, (inAppResult, inAppDetailsList) -> {
-            if (inAppResult.getResponseCode() == BillingClient.BillingResponseCode.OK && inAppDetailsList != null) {
-                for (ProductDetails pd : inAppDetailsList) {
-                    cachedDetailsMap.put(pd.getProductId(), pd);
+        billingClient.queryProductDetailsAsync(inAppParams, (inAppResult, inAppDetailsResult) -> {
+            if (inAppResult.getResponseCode() == BillingClient.BillingResponseCode.OK && inAppDetailsResult != null) {
+                List<ProductDetails> list = inAppDetailsResult.getProductDetailsList();
+                if (list != null) {
+                    for (ProductDetails pd : list) {
+                        cachedDetailsMap.put(pd.getProductId(), pd);
+                    }
                 }
             }
 
@@ -196,10 +199,13 @@ public class BillingPlugin extends Plugin implements PurchasesUpdatedListener {
                     .setProductList(subsList)
                     .build();
 
-            billingClient.queryProductDetailsAsync(subsParams, (subsResult, subsDetailsList) -> {
-                if (subsResult.getResponseCode() == BillingClient.BillingResponseCode.OK && subsDetailsList != null) {
-                    for (ProductDetails pd : subsDetailsList) {
-                        cachedDetailsMap.put(pd.getProductId(), pd);
+            billingClient.queryProductDetailsAsync(subsParams, (subsResult, subsDetailsResult) -> {
+                if (subsResult.getResponseCode() == BillingClient.BillingResponseCode.OK && subsDetailsResult != null) {
+                    List<ProductDetails> list = subsDetailsResult.getProductDetailsList();
+                    if (list != null) {
+                        for (ProductDetails pd : list) {
+                            cachedDetailsMap.put(pd.getProductId(), pd);
+                        }
                     }
                 }
                 if (onDone != null) onDone.run();
